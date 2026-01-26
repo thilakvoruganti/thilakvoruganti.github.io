@@ -1,7 +1,7 @@
 {
   "files": {
     "main.css": "/static/css/main.207a72ed.css",
-    "main.js": "/static/js/main.29572e0e.js",
+    "main.js": "/static/js/main.75ea5643.js",
     "static/media/frontend.svg": "/static/media/frontend.6f300b8b2901020899d1df147214f1e9.svg",
     "static/media/cypress.svg": "/static/media/cypress.6912cd2ace12051efa3301089cf293a2.svg",
     "static/media/figma.svg": "/static/media/figma.4ecd9ac05a0654fefe88040b1d2568c6.svg",
@@ -53,15 +53,15 @@
     "static/media/mangodb.svg": "/static/media/mangodb.fcf7316e9d44e68aa35ff3a7f2314d11.svg",
     "static/media/angular.svg": "/static/media/angular.7972a3282566e5994fc2be4b90cf59ba.svg",
     "static/media/sql.svg": "/static/media/sql.d3b6afa233c94628c0f6a33087e88d4f.svg",
-    "index.html": "/index.html",
     "static/media/Linkedin.svg": "/static/media/Linkedin.c50b6e50a146722957e784db84fe10e2.svg",
     "static/media/Github.svg": "/static/media/Github.696d87dbc9153467fb52bca68de88cc5.svg",
     "static/media/Gmail.svg": "/static/media/Gmail.aceb5f911cd3bd2cbaf18e0aff61500a.svg",
+    "index.html": "/index.html",
     "main.207a72ed.css.map": "/static/css/main.207a72ed.css.map",
-    "main.29572e0e.js.map": "/static/js/main.29572e0e.js.map"
+    "main.75ea5643.js.map": "/static/js/main.75ea5643.js.map"
   },
   "entrypoints": [
     "static/css/main.207a72ed.css",
-    "static/js/main.29572e0e.js"
+    "static/js/main.75ea5643.js"
   ]
 }
