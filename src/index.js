@@ -2,6 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import App from './App';
+import { initAnalytics } from './lib/firebaseAnalytics';
+
+initAnalytics();
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -11,4 +14,3 @@ root.render(
     </HashRouter>
   </React.StrictMode>
 );
-
