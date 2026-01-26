@@ -11,6 +11,120 @@ body {
   overflow-x: hidden;   /* <-- stop the rightward scroll */
 }
 
+/* Global paragraph typography inspired by Apple intro elevated */
+p {
+  font-size: 24px;
+  line-height: 1.1666666667;
+  font-weight: 600;
+  letter-spacing: 0.009em;
+}
+
+@media only screen and (max-width: 1068px) {
+  p {
+    font-size: 21px;
+    line-height: 1.1904761905;
+    letter-spacing: 0.011em;
+  }
+}
+
+/* Hero bridge text styling (below typing card) */
+.hero-bridge {
+  font-size: 20px;
+  line-height: 1.4;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+@media only screen and (max-width: 768px) {
+  .hero-bridge {
+    font-size: 18px;
+    line-height: 1.4;
+  }
+}
+
+/* Testimonial responsive layout: column by default, row at ≥960px */
+.testimonial-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.testimonial-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.testimonial-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: flex-start;
+  text-align: left;
+}
+
+@media (min-width: 960px) {
+  .testimonial-row {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 3rem;
+  }
+  .testimonial-left { flex: 2; }
+  .testimonial-right {
+    flex: 1;
+    align-items: flex-end;
+    text-align: right;
+  }
+}
+
+:root {
+  --f-max-content-width: 1320px;
+  --f-page-width: 1440px;
+  --f-columns: 12;
+  --f-col-width: calc(min(100vw, var(--f-max-content-width)) / var(--f-columns));
+  --f-gutter: 24px;
+  --f-lego-block-padding: 0;
+}
+
+.f-container {
+  width: calc(min(var(--f-max-content-width), 100vw));
+  max-width: calc(min(100vw, var(--f-page-width)));
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--f-gutter);
+  padding-right: var(--f-gutter);
+  box-sizing: border-box;
+}
+
+@media (min-width: 560px) {
+  :root {
+    --f-columns: 12;
+    --f-col-width: calc(min(100vw, var(--f-max-content-width)) / var(--f-columns));
+    --f-gutter: var(--f-col-width);
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --f-columns: 24;
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --f-lego-block-padding: 7.5rem;
+    --f-columns: 48;
+    --f-col-width: calc(min(100vw, var(--f-max-content-width)) / var(--f-columns));
+    --f-gutter: calc(var(--f-col-width) * 2);
+  }
+}
+
+@media (min-width: 1440px) {
+  :root {
+    --f-gutter: 24px;
+  }
+}
+
 /* Cards wrapper margins after the navbar */
 .cards-wrap { margin: 2.5rem 0 5rem; }
 
@@ -23,4 +137,59 @@ body {
   display: flex;
   justify-content: center;
   pointer-events: none;     /* CTA/controls re-enable with pointer-events:auto */
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(-120%);
+    opacity: 0.5;
+  }
+  40% {
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateY(140%);
+    opacity: 0;
+  }
+}
+
+/* About headline sizing modeled after Apple headline breakpoints */
+.about-headline {
+  font-size: 72px;
+  line-height: 1.0555555556;
+}
+
+@media only screen and (max-width: 1068px) {
+  .about-headline {
+    font-size: 56px;
+    line-height: 1.0714285714;
+  }
+}
+
+@media only screen and (max-width: 734px) {
+  .about-headline {
+    font-size: 40px;
+    line-height: 1.1;
+  }
+}
+
+.about-highlight {
+  color: #0a0a0a;
+  font-weight: 700;
+}
+
+/* About intro copy sizing modeled after Apple intro elevated */
+.about-intro {
+  font-size: 24px;
+  line-height: 1.1666666667;
+  font-weight: 600;
+  letter-spacing: 0.009em;
+}
+
+@media only screen and (max-width: 1068px) {
+  .about-intro {
+    font-size: 21px;
+    line-height: 1.1904761905;
+    letter-spacing: 0.011em;
+  }
 }

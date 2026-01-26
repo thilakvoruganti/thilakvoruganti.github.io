@@ -1,0 +1,19 @@
+Instructions for importing the Connect section:
+
+1) Unzip the bundle in the target workspace root:
+   unzip connect-section.zip -d .
+
+2) Wire the context provider:
+   - Wrap your app in PortProvider from src/context/index.js (e.g., in src/index.js or App.js).
+
+3) Ensure the learning section sets ref={learningsectionRef} from usePort() so the scroll logic works.
+
+4) Use the component:
+   import Connect from './components/Connect';
+   // Render <Connect /> where desired.
+
+5) Load styles:
+   - Import the SCSS in your global styles entry (adjust path as needed):
+     @import "./styles/_connect.scss";
+
+6) If your SCSS theme lacks the variables used in _connect.scss, define matching values (colors/backgrounds) to preserve appearance.

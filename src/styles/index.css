@@ -19,32 +19,261 @@
 .landing .profile-card-con .highlight img {
   width: 490px;
   height: 653px;
-}/*# sourceMappingURL=index.css.map */
-.fig-cx0h0r {
-  font-family: var(--f-font-sans, 'figmaSans', 'figmaSans Fallback', SF Pro Display, system-ui, helvetica, sans-serif);
-  font-optical-sizing: auto;
-  font-size: 1.125rem;
-  line-height: 1.4;
-  letter-spacing: -0.005625rem;
-  font-weight: 480;
-  font-variation-settings: "wdth" 98, "wght" 480;
-  margin: 0;
-  color: var(--f-text-color, #000000);
-  color: inherit;
 }
 
-.fig-nav-item {
-  font-family: var(--f-font-sans, 'figmaSans', 'figmaSans Fallback', SF Pro Display, system-ui, helvetica, sans-serif);
-  font-optical-sizing: auto;
-  font-size: 0.95rem;
-  line-height: 1.25;
-  letter-spacing: -0.01rem;
-  font-weight: 480;
-  font-variation-settings: "wdth" 98, "wght" 480;
-  text-transform: uppercase;
-  transition: color 200ms ease;
+.exps {
+  position: relative;
+  height: 400vh; /* gives sticky room to work */
+  width: 100%;
 }
-
-.fig-nav-item:hover {
+.exps h2 {
+  padding-bottom: 2rem;
   color: #000;
 }
+.exps .exp-transform {
+  position: sticky;
+  top: 0;
+  transform-origin: top center;
+}
+.exps .exp-tab-center {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 100vh;
+  margin-left: auto;
+  margin-right: auto;
+}
+.exps .exp-tabs-content-center {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.exps .exp-tabs-content-transform {
+  background-color: #f4f5f7;
+  width: 100%;
+  max-width: 1800px;
+  min-height: 70vh;
+  display: flex;
+  align-items: center;
+  padding: 2rem;
+  border-radius: 24px;
+}
+.exps .exp-tabs-content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  width: 100%;
+}
+.exps .exp-title-tabs {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  font-size: 3rem;
+  position: relative;
+  margin: 0 4rem;
+}
+.exps .exp-title-tabs .role-container-center {
+  display: flex;
+  justify-content: center;
+}
+.exps .exp-title-tabs .role-container {
+  position: relative;
+  white-space: nowrap;
+  min-height: 4.5rem;
+  display: inline-flex;
+  cursor: pointer;
+}
+.exps .exp-title-tabs .role-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: nowrap;
+}
+.exps .exp-title-tabs .role-text.base {
+  position: relative;
+  color: #f4f5f7;
+  z-index: 1;
+}
+.exps .exp-title-tabs .role-text.overlay {
+  color: black;
+  z-index: 2;
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 0.6s ease;
+}
+.exps .exp-title-tabs .role-text.overlay.erased {
+  clip-path: inset(100% 0 0 0);
+}
+.exps .exp-title-tabs .highlight {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 4.5rem;
+  background: black;
+  z-index: 0;
+  transition: transform 0.6s ease;
+}
+.exps .exp-card-tabs {
+  padding-left: 0;
+}
+
+@media (max-width: 1068px) {
+  .exps .exp-title-tabs {
+    font-size: 2rem;
+  }
+  .exps .exp-title-tabs .role-container {
+    min-height: 3.5rem;
+  }
+  .exps .exp-title-tabs .highlight {
+    height: 3.5rem;
+  }
+}
+@media (max-width: 734px) {
+  .exps .exp-title-tabs {
+    padding-bottom: 2rem;
+  }
+  .exps .exp-tabs-content {
+    grid-template-columns: 1fr;
+  }
+  .exps .exp-tabs-content-transform {
+    min-height: auto;
+  }
+}
+.expscard-c .expc {
+  padding-right: 0 !important;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 !important;
+  margin: 0 !important;
+  height: 100vh;
+  top: 0;
+  position: sticky;
+}
+.expscard-c .exp-card {
+  background-color: #000000;
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem 1.5rem;
+}
+.expscard-c .exp-card .title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 0.25rem;
+}
+.expscard-c .exp-card .t-con {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  flex-wrap: nowrap;
+  min-width: 0;
+  padding-top: 0.5rem;
+  padding-bottom: 1rem;
+  font-size: 20px;
+  line-height: 24px;
+}
+.expscard-c .exp-card .t-con h4 {
+  margin-bottom: 0;
+  color: #f4f5f7;
+  font-size: 20px;
+  line-height: 26px;
+}
+.expscard-c .exp-card .t-con .timeline {
+  flex: 0 0 auto;
+  min-width: 0;
+  font-size: 16px;
+  line-height: 20px;
+  color: rgba(244, 245, 247, 0.85);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.expscard-c .exp-card .t-con .logo-wrap {
+  flex: 0 0 auto;
+  width: 80px;
+  height: 80px;
+  display: grid;
+  place-items: center;
+  background: #111;
+  border-radius: 12px;
+  padding: 0.75rem;
+}
+.expscard-c .exp-card .t-con .logo-wrap img {
+  max-width: 100%;
+  max-height: 100%;
+  -o-object-fit: contain;
+     object-fit: contain;
+  display: block;
+}
+.expscard-c .exp-card .b-con {
+  margin: 0;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(244, 245, 247, 0.16);
+  color: #f4f5f7;
+  line-height: 1.5;
+}
+
+.r-transition {
+  transition: transform 0.45s ease, opacity 0.3s ease;
+}
+
+@media (max-width: 991px) {
+  .expscard-c .expc {
+    justify-content: unset;
+  }
+  .expscard-c .expc .exp-card {
+    margin-top: 55vh;
+  }
+}
+@media (max-width: 472px) {
+  .expscard-c .expc .exp-card .t-con h4 {
+    font-size: 1rem;
+  }
+  .expscard-c .expc .exp-card .t-con .timeline {
+    font-size: 12px;
+  }
+}
+.exptabs {
+  font-size: 4rem;
+  position: relative;
+  padding: 1rem;
+}
+.exptabs .role-container {
+  position: relative;
+  white-space: nowrap;
+  min-height: 6rem;
+  display: inline-flex;
+  cursor: pointer;
+}
+.exptabs .role-text {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: nowrap;
+}
+.exptabs .role-text.base {
+  position: relative;
+  color: #f4f5f7;
+  z-index: 1;
+}
+.exptabs .role-text.overlay {
+  color: black;
+  z-index: 2;
+  clip-path: inset(0 0 0 0);
+  transition: clip-path 0.6s ease;
+}
+.exptabs .role-text.overlay.erased {
+  clip-path: inset(100% 0 0 0);
+}
+.exptabs .highlight {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 6rem;
+  background: red;
+  z-index: 0;
+  transition: transform 0.6s ease;
+}/*# sourceMappingURL=index.css.map */

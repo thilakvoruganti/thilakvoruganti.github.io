@@ -1,0 +1,19 @@
+Inspect zip contents:
+  unzip -l experience-section.zip
+
+Extract into project root:
+  unzip experience-section.zip -d .
+
+Review key files:
+  sed -n '1,200p' src/components/Experience.js
+  sed -n '1,200p' src/components/ExperienceCard.js
+  sed -n '1,200p' src/styles/_experience.scss
+
+Check SCSS variable dependencies:
+  grep -n '\$' src/styles/_experience.scss
+
+Find where to wire Experience:
+  rg "Experience" src
+
+If SCSS not yet imported, append to your global styles entry (adjust path as needed):
+  echo '@import "./styles/_experience.scss";' >> src/styles/index.scss

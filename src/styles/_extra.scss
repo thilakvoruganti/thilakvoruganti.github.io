@@ -1,0 +1,22 @@
+.extra {
+    position: relative;
+    width: 100%;
+    min-height: 300vh; /* give room for sticky to pin/unpin */
+    background: #f9f9fb;
+
+    .extra-content {
+        position: sticky;
+        top: 80px; /* below navbar */
+        max-width: 1320px;
+        margin: 0 auto;
+        padding: 4rem 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+        align-items: flex-start;
+    }
+
+    .extra-spacer {
+        height: 200vh;
+    }
+}

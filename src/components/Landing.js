@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import Aboutme from "./Aboutme";
+import Experience from "./Experience";
 
 // Images
 import FE_IMG from "../images/frontend.svg";
@@ -8,6 +10,10 @@ import BE_IMG from "../images/backend.svg";
 import AI_IMG from "../images/AI.svg";
 import UX_IMG from "../images/figma.svg";
 import PROFILE_IMG from "../images/profile.png";
+import Skills from "./Skills";
+import Extra from "./Extra";
+
+const RESUME_URL = "https://drive.google.com/file/d/14rIFd_nmR8ka2wxoVfjtY1i1wiVu220n/view?usp=sharing";
 
 /* ----------------- small utils ----------------- */
 const r = (n) => Math.round(n);
@@ -15,10 +21,10 @@ const clamp01 = (x) => Math.max(0, Math.min(1, x));
 const lerp = (a, b, t) => a + (b - a) * t;
 const tRange = (vw, lo, hi) => clamp01((vw - lo) / (hi - lo));
 const CARD_DATA = [
-  { id: "fe", src: FE_IMG, alt: "Front-end" },
+    { id: "ux", src: UX_IMG, alt: "UX Designer" },
   { id: "ai", src: AI_IMG, alt: "AI Engineer" },
   { id: "profile", src: PROFILE_IMG, alt: "Profile" },
-  { id: "ux", src: UX_IMG, alt: "UX Designer" },
+  { id: "fe", src: FE_IMG, alt: "Front-end" },
   { id: "be", src: BE_IMG, alt: "Back-end" },
 ];
 
@@ -173,40 +179,40 @@ export default function Landing() {
   // carousel position (0..4)
   const [shift, setShift] = useState(2);
   const [centerId, setCenterId] = useState("profile");
-  const [allLoaded] = useState(true);
 
   // calm copy per card (2 lines each)
-  const copy = useMemo(
-    () => ({
-      profile: {
-        text: "I build end-to-end products with 4+ years of experience.",
-        cta: "About me", to: "/about",
-      },
-      ai: {
-        text: "I use intelligence quietly, saving time without stealing attention.",
-        cta: "Explore", to: "/ai",
-      },
-      ux: {
-        text: "I design what feels obvious, respectful, and beautifully simple.",
-        cta: "Case Studies", to: "/ux",
-      },
-      fe: {
-        text: "I craft interfaces that load fast and stay delightfully smooth.",
-        cta: "See work", to: "/frontend",
-      },
-      be: {
-        text: "I build clean APIs and dependable data pipelines that scale.",
-        cta: "See work", to: "/backend",
-      },
-    }),
-    []
-  );
+const copy = useMemo(
+  () => ({
+    profile: {
+      text: "I build end-to-end products with 5+ years of experience.",
+      cta: "About me", to: "#about",
+    },
+    ai: {
+      text: "I use practical AI to automate repetitive tasks and amplify focus.",
+      cta: "Projects", to: "#projects",
+    },
+    ux: {
+      text: "I design simple, accessible flows that feel obvious and kind.",
+      cta: "Design", to: "#design",
+    },
+    fe: {
+      text: "I craft fast, resilient React interfaces that feel effortless.",
+      cta: "Resume", to: RESUME_URL,
+    },
+    be: {
+      text: "I build quiet backends secure, reliable, and effortlessly scalable.",
+      cta: "Resume", to: RESUME_URL,
+    },
+  }),
+  []
+);
+
 
   const current = copy[centerId] ?? copy.profile;
 
   /* autoplay + ring */
   const [running, setRunning] = useState(true);
-  const durationMs = 10000; // <- 10s highlight duration
+  const durationMs = 8000; // <- 8s highlight duration
   const onTick = useCallback(() => setShift((s) => (s + 1) % 5), []);
   const { elapsed, reset } = useAutoRotate({ running, durationMs, onTick });
   const progress = clamp01(elapsed / durationMs);
@@ -245,8 +251,8 @@ export default function Landing() {
 
 
   return (
-    <main className="pt-16 ">{/* clears 64px navbar */}
-      <section className="cards-wrap relative mx-auto w-screen isolate">
+    <section className="pt-16 overflow-x-hidden overflow-y-visible">{/* clears 64px navbar */}
+      <div className="cards-wrap relative mx-auto w-full isolate  pb-16 md:pb-20">
         <div>
           <Carousel5
             vw={vw}
@@ -276,17 +282,21 @@ export default function Landing() {
             onToggle={() => setRunning((v) => !v)}
             progress={progress}
           />
-        </div>
-        <div className="mt-16 flex justify-center px-6">
-          <p
-            className="text-center text-lg leading-7 text-neutral-700"
-            style={{ maxWidth: detailWidth }}
+
+          {/* Bridge text between landing and About me, matched to typing card width */}
+          <div className="w-full flex justify-center"
+            style={{ marginTop: vw >= 960 ? 56 : 40 }}
           >
-            A collection of my roles, all in one place. Go explore each profile individually.
-          </p>
+            <div
+              className="hero-bridge text-neutral-900 text-center"
+              style={{ width: cfg.type.w, maxWidth: "calc(100vw - 48px)" }}
+            >
+              I started in frontend engineering and grew into full-stack systems backed by scalable backend architecture, data pipelines, and machine learning in production.
+            </div>
+          </div>
         </div>
-      </section>
-    </main>
+      </div>
+    </section>
   );
 }
 function usePrevious(value) {
@@ -449,7 +459,19 @@ function HeroTypingCard({ text, cta, to, type, vw }) {
       <div className={`mt-auto pt-3 ${isDesktop ? "flex justify-end" : ""}`}>
         <button
           className={`rounded-xl bg-neutral-900 text-white transition ${isDesktop ? "w-auto px-4" : "w-full"}`}
-          onClick={() => to && navigate(to)}
+          onClick={() => {
+            if (!to) return;
+            if (to.startsWith('#')) {
+              const el = document.querySelector(to);
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              return;
+            }
+            if (/^https?:/i.test(to)) {
+              window.open(to, "_blank", "noreferrer");
+            } else {
+              navigate(to);
+            }
+          }}
           style={{
             padding: isDesktop ? "0.75rem 1.25rem" : "1rem",
             fontOpticalSizing: "auto",

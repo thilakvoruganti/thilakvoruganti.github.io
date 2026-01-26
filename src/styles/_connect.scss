@@ -1,0 +1,103 @@
+.connect{
+    position: relative;
+    text-align: center;
+    background-image: none;
+    background-color: white;
+    margin-top: -100vh;
+    z-index: 2;
+    overflow: visible;
+    .rc-c{
+        height: 230vh;
+        position: relative;
+    }
+    .rc{
+        background-repeat: no-repeat;
+        background-size: cover;
+        height: 100vh;
+        width: 100%;
+        position: sticky;
+        top: 0px;
+        display: flex;
+        -webkit-box-pack: center;
+        justify-content: center;
+        -webkit-box-align: center;
+        align-items: center;
+        background-image: linear-gradient(to bottom right, rgb(255, 255, 255) 0%, rgb(245, 245, 247) 34%, #ededf2 68%, #b5c6e0);
+    }
+    .c-mc{
+        margin-left: auto;
+        margin-right: auto;
+        width: 980px;
+    h1{
+        font-size: 96px;
+        line-height: 1.04167;
+        font-weight: 700;
+        letter-spacing: -.015em;
+        font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+        margin-bottom: 12px;
+        color: #000;
+    }
+    .cnbtn{
+        margin-block-start: 30px;
+        font-size: 17px;
+        line-height: 1.17648;
+        font-weight: 400;
+        letter-spacing: -.022em;
+        font-family: "SF Pro Text", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+        border-radius: 30px;
+        border-style: solid;
+        border-width: 1px;
+        min-width: 30px;
+        padding-left: 30px;
+        padding-right: 30px;
+        padding-top: 17px;
+        padding-bottom: 17px;
+        background: #1d1d1f;
+        color: #fff;
+        border-color: rgba(0, 0, 0, 0);
+        cursor: pointer;
+    display: inline-block;
+    text-align: center;
+    white-space: nowrap;
+    }
+    }
+    .scrim{
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        top: 0px;
+        left: 0px;
+        background-image: linear-gradient(white, white);
+        pointer-events: none;
+    }
+}
+
+@media screen and (max-width: 1068px){
+    .connect{
+        .c-mc{
+            h1{
+                font-size: 72px;
+            line-height: 1.05556;
+            font-weight: 700;
+            letter-spacing: -.012em;
+            font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+            margin-bottom: 7px;
+            }
+
+        }
+    }
+}
+@media screen and (max-width: 734px){
+    .connect{
+        .c-mc{
+            h1{
+                font-size: 40px;
+                line-height: 1.1;
+                font-weight: 700;
+                letter-spacing: 0em;
+                font-family: "SF Pro Display", "SF Pro Icons", "Helvetica Neue", "Helvetica", "Arial", sans-serif;
+            }
+            
+        }
+    }
+}

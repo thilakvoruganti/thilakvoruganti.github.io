@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
+
+  const isFrontendRoute = location.pathname.startsWith("/frontend");
 
   const toggle = () => setOpen((v) => !v);
   const close = () => setOpen(false);
@@ -23,7 +26,7 @@ export default function Navbar() {
         onClick: () => {
           close();
           window.open(
-            "https://drive.google.com/file/d/1M7lYBms39dDydHhTzECN2D3DpF_KDoa3/view",
+            "https://drive.google.com/file/d/14rIFd_nmR8ka2wxoVfjtY1i1wiVu220n/view?usp=sharing",
             "_blank",
             "noreferrer"
           );
@@ -68,10 +71,10 @@ export default function Navbar() {
           }}
         >
           <svg className="h-[30px] w-[50px]" viewBox="0 0 50 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M0 0.000366211L0 7.50037L7.63483 0.000366211L0 0.000366211Z" fill="#000" />
-            <rect x="7.63477" width="11.4522" height="30" fill="#000" />
-            <path d="M49.6266 0H34.3569L41.9918 15L49.6266 0Z" fill="#000" />
-            <path d="M33.3472 0H19.0869L34.0978 30L41.2279 15.75L33.3472 0Z" fill="#000" />
+            <path d="M0 0.000366211L0 7.50037L7.63483 0.000366211L0 0.000366211Z" fill={isFrontendRoute ? "#fff" : "#000"} />
+            <rect x="7.63477" width="11.4522" height="30" fill={isFrontendRoute ? "#fff" : "#000"} />
+            <path d="M49.6266 0H34.3569L41.9918 15L49.6266 0Z" fill={isFrontendRoute ? "#fff" : "#000"} />
+            <path d="M33.3472 0H19.0869L34.0978 30L41.2279 15.75L33.3472 0Z" fill={isFrontendRoute ? "#fff" : "#000"} />
           </svg>
         </button>
 
@@ -107,12 +110,16 @@ export default function Navbar() {
             className="relative flex h-8 w-8 items-center justify-center"
           >
             <span
-              className={`absolute left-1/2 h-0.5 w-6 -translate-x-1/2 bg-neutral-900 transition-transform duration-300 ${
+              className={`absolute left-1/2 h-0.5 w-6 -translate-x-1/2 transition-transform duration-300 ${
+                isFrontendRoute ? "bg-white" : "bg-neutral-900"
+              } ${
                 open ? "translate-y-0 rotate-45" : "-translate-y-1.5"
               }`}
             />
             <span
-              className={`absolute left-1/2 h-0.5 w-6 -translate-x-1/2 bg-neutral-900 transition-transform duration-300 ${
+              className={`absolute left-1/2 h-0.5 w-6 -translate-x-1/2 transition-transform duration-300 ${
+                isFrontendRoute ? "bg-white" : "bg-neutral-900"
+              } ${
                 open ? "translate-y-0 -rotate-45" : "translate-y-1.5"
               }`}
             />

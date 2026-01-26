@@ -1,11 +1,14 @@
 import { Route, Routes } from 'react-router-dom';
 import './index.css'
-import Main from './components/Main';
+import './styles/index.scss'
 import Frontend from './components/Frontend';
+import Navbar from './components/Navbar';
+import Main from './components/Main';
 
 function App() {
   return (
-    <div className="App overflow-x-hidden">
+    <div className="App ">
+      <Navbar/>
       <Routes>
         <Route path="/" element={<Main/>} />
          <Route path="/frontend" element={<Frontend/>} />
