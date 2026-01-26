@@ -252,6 +252,7 @@ const copy = useMemo(
 
   return (
     <section className="pt-16 overflow-x-hidden overflow-y-visible">{/* clears 64px navbar */}
+      <h1 className="sr-only">Thilak Voruganti</h1>
       <div className="cards-wrap relative mx-auto w-full isolate  pb-16 md:pb-20">
         <div>
           <Carousel5
