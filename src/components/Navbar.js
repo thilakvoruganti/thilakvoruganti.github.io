@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { trackEvent } from "../lib/firebaseAnalytics";
 
 export default function Navbar() {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ export default function Navbar() {
         label: "Resume",
         minWidth: 96,
         onClick: () => {
+          trackEvent("nav_click", { label: "Resume" });
           close();
           window.open(
             "https://drive.google.com/file/d/14rIFd_nmR8ka2wxoVfjtY1i1wiVu220n/view?usp=sharing",
@@ -36,6 +38,7 @@ export default function Navbar() {
         label: "LN",
         minWidth: 70,
         onClick: () => {
+          trackEvent("nav_click", { label: "LinkedIn" });
           close();
           window.open("https://www.linkedin.com/in/thilakvoruganti/", "_blank", "noreferrer");
         },
@@ -44,6 +47,7 @@ export default function Navbar() {
         label: "GM",
         minWidth: 70,
         onClick: () => {
+          trackEvent("nav_click", { label: "Gmail" });
           close();
           window.location.href = "mailto:thilak.voruganti@gmail.com";
         },
@@ -65,6 +69,7 @@ export default function Navbar() {
           className="shrink-0"
           aria-label="Go home"
           onClick={() => {
+            trackEvent("nav_click", { label: "Home" });
             navigate("/");
             scrollTop();
             close();

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { trackEvent } from "../lib/firebaseAnalytics";
 import Aboutme from "./Aboutme";
 import Experience from "./Experience";
 
@@ -421,7 +422,6 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight }) {
 function HeroTypingCard({ text, cta, to, type, vw }) {
   const navigate = useNavigate();
   const padding = vw >= 960 ? "1rem" : "0.75rem 1rem";
-  const isWide = vw >= 1440;
   const isDesktop = vw >= 960;
   const dynamicButtonFont = isDesktop
     ? 16
@@ -462,6 +462,7 @@ function HeroTypingCard({ text, cta, to, type, vw }) {
           className={`rounded-xl bg-neutral-900 text-white transition ${isDesktop ? "w-auto px-4" : "w-full"}`}
           onClick={() => {
             if (!to) return;
+            trackEvent("cta_click", { section: "landing", label: cta || "Know more", target: to });
             if (to.startsWith('#')) {
               const el = document.querySelector(to);
               if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });

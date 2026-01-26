@@ -1,6 +1,7 @@
 import GITHUB_ICON from '../images/footer/socials/Github.svg';
 import LINKEDIN_ICON from '../images/footer/socials/Linkedin.svg';
 import GMAIL_ICON from '../images/footer/socials/Gmail.svg';
+import { trackEvent } from '../lib/firebaseAnalytics';
 
 const icons = [
   {
@@ -37,6 +38,12 @@ export default function Footer() {
                 aria-label={icon.label}
                 target="_blank"
                 rel="noreferrer"
+                onClick={() =>
+                  trackEvent("social_click", {
+                    label: icon.label,
+                    target: icon.href,
+                  })
+                }
               className="flex h-[50px] w-[50px] items-center justify-center rounded-full bg-[#2B2B2B] text-white"
               >
                 <img

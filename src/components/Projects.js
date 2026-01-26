@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { trackEvent } from "../lib/firebaseAnalytics";
 
 import CHImg from "../images/projects/CH.png";
 import CVImg from "../images/projects/CV.png";
@@ -143,6 +144,13 @@ export default function Projects() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label={`${project.title} link`}
+                onClick={() =>
+                  trackEvent("project_click", {
+                    project: project.key,
+                    title: project.title,
+                    target: project.href,
+                  })
+                }
                 className="flex flex-col justify-between rounded-2xl text-black shadow-lg"
                 style={{
                   backgroundColor: CARD_COLORS[project.key],

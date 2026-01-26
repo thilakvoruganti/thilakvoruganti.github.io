@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAnalytics, isSupported } from "firebase/analytics";
+import { getAnalytics, isSupported, logEvent } from "firebase/analytics";
 
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
@@ -11,12 +11,20 @@ const firebaseConfig = {
   measurementId: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID,
 };
 
+let analytics = null;
+
 export function initAnalytics() {
   if (process.env.NODE_ENV !== "production") return;
   if (!firebaseConfig.apiKey || !firebaseConfig.appId || !firebaseConfig.measurementId) return;
 
   const app = initializeApp(firebaseConfig);
   isSupported().then((supported) => {
-    if (supported) getAnalytics(app);
+    if (supported) analytics = getAnalytics(app);
   });
+}
+
+export function trackEvent(name, params) {
+  if (process.env.NODE_ENV !== "production") return;
+  if (!analytics) return;
+  logEvent(analytics, name, params);
 }
