@@ -1,8 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
+import { EXPERIENCE_ENTRIES } from '../content/experience';
 import ExperienceCard from './ExperienceCard';
 
 const Experience = () => {
-  const data = require('../json/about.json');
   const sectionRef = useRef(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const overlayRefs = useRef([]);
@@ -32,7 +32,7 @@ const Experience = () => {
 
       // Only run scroll logic if section is in view
       if (top < viewportHeight && top + height > 0) {
-        const progress = Math.min(Math.max(-top / viewportHeight, 0), data.experience.length - 1);
+        const progress = Math.min(Math.max(-top / viewportHeight, 0), EXPERIENCE_ENTRIES.length - 1);
         const index = Math.floor(progress);
         setActiveIndex(index);
       }
@@ -46,7 +46,7 @@ const Experience = () => {
       window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
-  }, [data.experience.length]);
+  }, []);
 
 
   // const handleClick = (index) => {
@@ -62,12 +62,13 @@ const Experience = () => {
   // };
 
   return (
-    <div className="tvsection exps" ref={sectionRef}>
+    <div id="experience" className="tvsection exps" ref={sectionRef}>
       <div className="exp-transform">
         <div className="exp-tab-center">
           <div className="f-container">
-            <h2 className="about-headline font-semibold">
-              Experience
+            <h2 className="about-headline font-semibold experience-headline">
+              Experience{" "}
+              <span className="exp-scroll-hint">(scroll to explore)</span>
             </h2>
           </div>
           <div className="exp-tabs-content-center">
@@ -83,7 +84,7 @@ const Experience = () => {
                       </span>
                     </div>
                   ))} */}
-                  {data.experience.map((exp, idx) => (
+                  {EXPERIENCE_ENTRIES.map((exp, idx) => (
                     <div className="role-container-center" key={exp.uid}>
                       <span className="role-container">
                         <span className="role-text base">{exp.title}</span>
@@ -101,9 +102,9 @@ const Experience = () => {
 
                 {/* RIGHT SIDE - ACTIVE EXPERIENCE CARD */}
                 <div className="exp-card-tabs">
-                  {data.experience.map((edata, idx) => (
+                  {EXPERIENCE_ENTRIES.map((edata, idx) => (
                     idx === activeIndex && (
-                      <ExperienceCard key={idx} edata={edata} />
+                      <ExperienceCard key={edata.uid} edata={edata} />
                     )
                   ))}
                 </div>

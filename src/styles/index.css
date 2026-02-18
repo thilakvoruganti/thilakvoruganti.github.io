@@ -21,6 +21,54 @@
   height: 653px;
 }
 
+@property --angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+.hero-cta-shell {
+  position: relative;
+  width: -moz-fit-content;
+  width: fit-content;
+}
+
+.hero-cta-glow {
+  --angle: 0deg;
+  position: absolute;
+  inset: -4px;
+  border-radius: 21px;
+  background: conic-gradient(from var(--angle), #6f6bff, #8a7cff, #67dff2, #b2c3f3, #6f6bff);
+  opacity: 0;
+  transition: opacity 180ms ease-out;
+  animation: hero-cta-spin 2.6s linear infinite;
+  z-index: 0;
+}
+
+.hero-cta-shell.is-hover .hero-cta-glow {
+  opacity: 0.6;
+}
+
+.hero-typing-card {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-cta-btn {
+  background: rgb(77, 73, 252);
+  color: #ffffff;
+}
+
+.hero-cta-btn:hover,
+.hero-cta-btn:focus-visible {
+  background: #0b0b0b;
+  color: #ffffff;
+}
+
+@keyframes hero-cta-spin {
+  to {
+    --angle: 360deg;
+  }
+}
 .exps {
   position: relative;
   height: 400vh; /* gives sticky room to work */
@@ -55,14 +103,13 @@
   min-height: 70vh;
   display: flex;
   align-items: center;
-  padding: 2rem;
   border-radius: 24px;
 }
 .exps .exp-tabs-content {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 2rem;
-  width: 100%;
+  margin-left: auto;
+  margin-right: auto;
 }
 .exps .exp-title-tabs {
   display: flex;
@@ -71,7 +118,10 @@
   position: relative;
   font-size: 3rem;
   position: relative;
-  margin: 0 4rem;
+  width: 450px;
+  margin-right: auto;
+  margin-top: auto;
+  margin-bottom: auto;
 }
 .exps .exp-title-tabs .role-container-center {
   display: flex;
@@ -118,9 +168,34 @@
   padding-left: 0;
 }
 
-@media (max-width: 1068px) {
+@media (max-width: 1439px) and (min-width: 960px) {
+  .exps .exp-title-tabs {
+    font-size: 2.75rem;
+    width: 400px;
+  }
+  .exps .exp-title-tabs .role-container {
+    min-height: 4rem;
+  }
+  .exps .exp-title-tabs .highlight {
+    height: 4rem;
+  }
+}
+@media (max-width: 959px) and (min-width: 768px) {
+  .exps .exp-title-tabs {
+    font-size: 2.25rem;
+    width: 340px;
+  }
+  .exps .exp-title-tabs .role-container {
+    min-height: 3.75rem;
+  }
+  .exps .exp-title-tabs .highlight {
+    height: 3.75rem;
+  }
+}
+@media (max-width: 767px) and (min-width: 560px) {
   .exps .exp-title-tabs {
     font-size: 2rem;
+    width: 340px;
   }
   .exps .exp-title-tabs .role-container {
     min-height: 3.5rem;
@@ -128,16 +203,24 @@
   .exps .exp-title-tabs .highlight {
     height: 3.5rem;
   }
-}
-@media (max-width: 734px) {
-  .exps .exp-title-tabs {
-    padding-bottom: 2rem;
-  }
   .exps .exp-tabs-content {
     grid-template-columns: 1fr;
   }
-  .exps .exp-tabs-content-transform {
-    min-height: auto;
+}
+@media (max-width: 559px) {
+  .exps .exp-title-tabs {
+    font-size: 1.75rem;
+    width: 100%;
+    padding-bottom: 2rem;
+  }
+  .exps .exp-title-tabs .role-container {
+    min-height: 3.25rem;
+  }
+  .exps .exp-title-tabs .highlight {
+    height: 3.25rem;
+  }
+  .exps .exp-tabs-content {
+    grid-template-columns: 1fr;
   }
 }
 .expscard-c .expc {

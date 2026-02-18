@@ -12,7 +12,7 @@ const PortProvider = (props) => {
   const [effect, setEffect] = useState(false)
   const [di, setDI] = useState(false)
 
-  const[viewportW, setviewportW] = useState(window.innerWidth)
+  const [viewportW] = useState(window.innerWidth)
 
   
 

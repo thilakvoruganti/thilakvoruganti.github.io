@@ -86,6 +86,47 @@ p {
   --f-lego-block-padding: 0;
 }
 
+.fig-1rs6q0e {
+  --text-color: #000000;
+  --bg-color: #ffffff;
+  position: relative;
+  height: 81px;
+  display: block;
+}
+
+.fig-1jciw8t {
+  position: fixed;
+  inset: 0 0 auto;
+  background: var(--f-bg-color, #ffffff);
+  color: var(--f-text-color, #000000);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+  z-index: 60;
+}
+
+.fig-1j1iokz {
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  touch-action: pan-y pinch-zoom;
+}
+
+.fig-1obvupn {
+  transform: translate3d(0px, 0px, 0px);
+}
+
+.fig-1anly6q {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  width: 100%;
+  opacity: 1;
+  transition: transform 0.2s ease-out, opacity 0.1s ease-out;
+}
+
 .f-container {
   width: calc(min(var(--f-max-content-width), 100vw));
   max-width: calc(min(100vw, var(--f-page-width)));
@@ -159,10 +200,31 @@ p {
   line-height: 1.0555555556;
 }
 
+.experience-headline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.exp-scroll-hint {
+  font-size: 18px;
+  font-weight: 500;
+  color: #7a7a7a;
+  white-space: nowrap;
+  line-height: 1;
+  transform: translateY(6px);
+}
+
 @media only screen and (max-width: 1068px) {
   .about-headline {
     font-size: 56px;
     line-height: 1.0714285714;
+  }
+  .exp-scroll-hint {
+    display: block;
+    margin-left: 0;
+    margin-top: 6px;
+    font-size: 16px;
   }
 }
 

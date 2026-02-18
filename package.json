@@ -2,6 +2,7 @@
   "name": "portfolio",
   "version": "0.1.0",
   "private": true,
+  "description": "Personal portfolio for Thilak Voruganti",
   "homepage": "https://thilakvoruganti.me",
   "dependencies": {
     "@testing-library/dom": "^10.4.1",
@@ -23,13 +24,15 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build -r https://github.com/thilakvoruganti/thilakvoruganti.github.io.git",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "lint": "eslint --max-warnings=0 \"src/**/*.{js,jsx}\"",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write \"**/*.{js,jsx,ts,tsx,scss,css,json,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,scss,css,json,md}\""
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+  "engines": {
+    "node": ">=18.18.0",
+    "npm": ">=9.0.0"
   },
   "browserslist": {
     "production": [
@@ -45,8 +48,15 @@
   },
   "devDependencies": {
     "autoprefixer": "^10.4.21",
+    "eslint": "^8.57.1",
+    "eslint-config-react-app": "^7.0.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-jsx-a11y": "^6.9.0",
+    "eslint-plugin-react": "^7.37.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
     "gh-pages": "^6.3.0",
     "postcss": "^8.5.6",
+    "prettier": "^3.3.2",
     "tailwindcss": "^3.4.17"
   }
 }

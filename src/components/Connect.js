@@ -59,10 +59,9 @@ const Connect = () => {
         );
       }
     };
-
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
+  }, [learningsectionRef]);
 
   return (
     <div className='connect' ref={connectsectionRef}>

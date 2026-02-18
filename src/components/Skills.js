@@ -99,7 +99,7 @@ export default function Skills() {
   const isAccordion = vw <= 960;
 
   return (
-    <section className="w-full bg-white py-16 md:py-24">
+    <section id="skills" className="w-full bg-white py-16 md:py-24">
       <div className="f-container flex w-full flex-col gap-12">
         <h2 className="about-headline font-semibold">Skills</h2>
 

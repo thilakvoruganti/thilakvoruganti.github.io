@@ -50,13 +50,14 @@ export default function Design() {
                     href={card.href}
                     target="_blank"
                     rel="noreferrer"
-                    onClick={() =>
-                      trackEvent("design_cta_click", {
+                    onClick={() => {
+                      const name = card.label === "Figma" ? "design_figma_click" : "design_dribbble_click";
+                      trackEvent(name, {
                         label: card.label,
                         title: card.title,
                         target: card.href,
-                      })
-                    }
+                      });
+                    }}
                     className="group relative inline-flex items-center text-white text-[32px] leading-[39px] font-semibold"
                   >
                     <img

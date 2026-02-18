@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { EXTERNAL_LINKS } from "../constants";
 
 /**
  * FrontendLanding — hero + metrics + console, then Skills and Experience sections.
@@ -36,74 +37,22 @@ function usePrefersReducedMotion() {
   return reduced;
 }
 
-function IconSplitView({ className = "" }) {
-  return (
-    <svg
-      width="22"
-      height="18"
-      viewBox="0 0 22 18"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      <rect x="1" y="2" width="20" height="14" rx="3" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M11 2v14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconPane({ className = "" }) {
-  return (
-    <svg
-      width="20"
-      height="18"
-      viewBox="0 0 20 18"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      <rect x="1" y="2" width="18" height="14" rx="3" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M1 6h18" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconChevrons({ className = "" }) {
-  return (
-    <svg
-      width="22"
-      height="14"
-      viewBox="0 0 22 14"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
-    >
-      <path
-        d="M4 3l4 4-4 4M10 3l4 4-4 4"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 // Console — prints one line at a time on load (once)
-const RESUME_URL = "https://drive.google.com/file/d/14rIFd_nmR8ka2wxoVfjtY1i1wiVu220n/view?usp=sharing";
-const LINKEDIN_URL = "https://www.linkedin.com/in/thilakvoruganti/";
-const EMAIL_URL = "mailto:thilak.voruganti@gmail.com";
+const { resume: RESUME_URL, linkedin: LINKEDIN_URL, email: EMAIL_URL } = EXTERNAL_LINKS;
 
 function ConsoleCard() {
-  const lines = [
-    {
-      kind: "text",
-      text: "Hey! I'm Thilak, a Front-end Engineer crafting fast, accessible, and scalable web experiences.Over the past 5+ years, I've built responsive UIs with React, Angular, and modern frameworks, turning complex ideas into pixel-perfect products.",
-    },
-    { kind: "link", label: "Resume ↗", href: RESUME_URL },
-    { kind: "link", label: "LinkedIn ↗", href: LINKEDIN_URL },
-    { kind: "link", label: "Gmail ↗", href: EMAIL_URL },
-  ];
+  const lines = useMemo(
+    () => [
+      {
+        kind: "text",
+        text: "Hey! I'm Thilak, a Front-end Engineer crafting fast, accessible, and scalable web experiences.Over the past 5+ years, I've built responsive UIs with React, Angular, and modern frameworks, turning complex ideas into pixel-perfect products.",
+      },
+      { kind: "link", label: "Resume ↗", href: RESUME_URL },
+      { kind: "link", label: "LinkedIn ↗", href: LINKEDIN_URL },
+      { kind: "link", label: "Gmail ↗", href: EMAIL_URL },
+    ],
+    []
+  );
   const prefersReduced = usePrefersReducedMotion();
   const printedIdx = useRef(prefersReduced ? lines.length : 0);
   const [visibleCount, setVisibleCount] = useState(printedIdx.current);
@@ -120,7 +69,7 @@ function ConsoleCard() {
     };
     to = window.setTimeout(step, 240);
     return () => to && window.clearTimeout(to);
-  }, [prefersReduced]);
+  }, [prefersReduced, lines.length]);
 
   return (
     <div className="flex h-[480px] flex-col rounded-[24px] bg-[#1A2032] shadow-[0_18px_40px_rgba(4,6,11,0.55)] overflow-hidden backdrop-blur">
