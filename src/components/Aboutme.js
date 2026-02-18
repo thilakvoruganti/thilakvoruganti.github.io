@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react'
 import CERT_GIF from "../images/gifs/certifications.gif";
 import LEETCODE_GIF from "../images/gifs/leetcode.gif";
 import IMPACT_GIF from "../images/gifs/impact.gif";
-import Testimonial from "./Testimonial";
+import { EXTERNAL_LINKS } from "../constants";
+import { trackEvent } from "../lib/firebaseAnalytics";
 
 const cards = [
   {
@@ -19,6 +20,9 @@ const cards = [
     src: LEETCODE_GIF,
     alt: "LeetCode profile animation",
     body: "Regular problem solving to strengthen algorithms and data structures.",
+    href: EXTERNAL_LINKS.leetcode,
+    cta: "View LeetCode profile",
+    eventName: "about_leetcode_click",
   },
   {
     title: "Impact",
@@ -38,14 +42,6 @@ export default function Aboutme() {
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
-
-  const boxSize = (() => {
-    if (vw >= 1440) return '406.66px';
-    if (vw >= 960) return '25vw';
-    if (vw >= 767) return '41.66vw';
-    if (vw >= 559) return '83.441vw';
-    return '91.23vw';
-  })();
 
   const gifHeight = (() => {
     if (vw >= 1440) return '180px';
@@ -112,6 +108,22 @@ export default function Aboutme() {
               >
                 {card.body}
               </p>
+              {card.href && card.cta ? (
+                <a
+                  href={card.href}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 text-base font-medium text-neutral-900 underline underline-offset-4"
+                  onClick={() => {
+                    if (card.eventName) {
+                      trackEvent(card.eventName, { label: card.title, target: card.href });
+                    }
+                  }}
+                >
+                  {card.cta}
+                  <span aria-hidden="true">→</span>
+                </a>
+              ) : null}
             </div>
           ))}
         </div>

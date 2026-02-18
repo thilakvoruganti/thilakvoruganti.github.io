@@ -18,7 +18,7 @@ const CARD_COLORS = {
 
 const PROJECTS = [
   { key: "CV", title: "World of CV", img: CVImg, href: "https://thilakvoruganti.github.io/CV/" },
-  { key: "EF", title: "Ecoflights", img: EFImg, href: "https://github.com/thilakvoruganti/FlightBooking" },
+  { key: "EF", title: "Ecoflights", img: EFImg, href: "https://flight-booking-pdmr.vercel.app/" },
   { key: "ICD", title: "ICD Prediction", img: ICDImg, href: "https://github.com/thilakvoruganti/ICD_Prediction" },
   { key: "CH", title: "Consistent Hashing", img: CHImg, href: "https://drive.google.com/file/d/1vJtMIJd0bWMe-Yc7GE6Vr9wXAFsqPulm/view?usp=sharing" },
   { key: "EC", title: "E-commerce", img: ECImg, href: "https://github.com/thilakvoruganti/e-commerce" },
@@ -144,13 +144,14 @@ export default function Projects() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label={`${project.title} link`}
-                onClick={() =>
-                  trackEvent("project_click", {
+                onClick={() => {
+                  const name = `project_${project.key.toLowerCase()}_click`;
+                  trackEvent(name, {
                     project: project.key,
                     title: project.title,
                     target: project.href,
-                  })
-                }
+                  });
+                }}
                 className="flex flex-col justify-between rounded-2xl text-black shadow-lg"
                 style={{
                   backgroundColor: CARD_COLORS[project.key],

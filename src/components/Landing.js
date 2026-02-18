@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import { EXTERNAL_LINKS } from "../constants";
 import { trackEvent } from "../lib/firebaseAnalytics";
-import Aboutme from "./Aboutme";
-import Experience from "./Experience";
 
 // Images
 import FE_IMG from "../images/frontend.svg";
@@ -11,10 +10,6 @@ import BE_IMG from "../images/backend.svg";
 import AI_IMG from "../images/AI.svg";
 import UX_IMG from "../images/figma.svg";
 import PROFILE_IMG from "../images/profile.png";
-import Skills from "./Skills";
-import Extra from "./Extra";
-
-const RESUME_URL = "https://drive.google.com/file/d/14rIFd_nmR8ka2wxoVfjtY1i1wiVu220n/view?usp=sharing";
 
 /* ----------------- small utils ----------------- */
 const r = (n) => Math.round(n);
@@ -186,23 +181,28 @@ const copy = useMemo(
   () => ({
     profile: {
       text: "I build end-to-end products with 5+ years of experience.",
+      hoverText: "Full-stack engineer with 5+ years building reliable products. Explore my resume to know more.",
       cta: "About me", to: "#about",
     },
     ai: {
       text: "I use practical AI to automate repetitive tasks and amplify focus.",
+      hoverText: "AI-focused engineer shipping practical ML solutions. Explore projects to know more.",
       cta: "Projects", to: "#projects",
     },
     ux: {
       text: "I design simple, accessible flows that feel obvious and kind.",
+      hoverText: "I design user-first product flows and interactions. Explore design work to know more.",
       cta: "Design", to: "#design",
     },
     fe: {
       text: "I craft fast, resilient React interfaces that feel effortless.",
-      cta: "Resume", to: RESUME_URL,
+      hoverText: "Frontend engineer with 5+ years building performant UI. Explore my resume to know more.",
+      cta: "Resume", to: EXTERNAL_LINKS.resume,
     },
     be: {
       text: "I build quiet backends secure, reliable, and effortlessly scalable.",
-      cta: "Resume", to: RESUME_URL,
+      hoverText: "Backend engineer focused on scale, APIs, and reliability. Explore my resume to know more.",
+      cta: "Resume", to: EXTERNAL_LINKS.resume,
     },
   }),
   []
@@ -213,13 +213,26 @@ const copy = useMemo(
 
   /* autoplay + ring */
   const [running, setRunning] = useState(true);
+  const [isCtaHovered, setIsCtaHovered] = useState(false);
+  const [isCarouselDragging, setIsCarouselDragging] = useState(false);
   const durationMs = 8000; // <- 8s highlight duration
   const onTick = useCallback(() => setShift((s) => (s + 1) % 5), []);
-  const { elapsed, reset } = useAutoRotate({ running, durationMs, onTick });
+  const { elapsed, reset } = useAutoRotate({
+    running: running && !isCtaHovered && !isCarouselDragging,
+    durationMs,
+    onTick,
+  });
   const progress = clamp01(elapsed / durationMs);
 
-  const next = () => { setShift((s) => (s + 1) % 5); reset(); };
-  const prev = () => { setShift((s) => (s + 4) % 5); reset(); };
+  const next = useCallback(() => {
+    setShift((s) => (s + 1) % 5);
+    reset();
+  }, [reset]);
+
+  const prev = useCallback(() => {
+    setShift((s) => (s + 4) % 5);
+    reset();
+  }, [reset]);
 
   // keyboard access
   useEffect(() => {
@@ -230,29 +243,22 @@ const copy = useMemo(
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [next, prev]);
 
   // height of the highlighted (center) card only
   const trackHeight = cfg.L.h;
   const typeBottom = useMemo(() => {
     if (vw >= 1440) return 300;
-    if (vw >= 960) return 255;
-    if (vw >= 767) return 200;
-    if (vw >= 560) return 220;
-    return 180;
-  }, [cfg.L.h, cfg.type.h, vw]);
-
-  const detailWidth = useMemo(() => {
-    if (vw >= 1440) return 491;
-    if (vw >= 1280) return 489;
-    if (vw >= 560) return cfg.type.w;
-    return Math.round(Math.max(200, Math.min(511, (vw / 559) * 511)));
-  }, [vw, cfg.type.w]);
+    if (vw >= 960) return 300;
+    if (vw >= 767) return 300;
+    if (vw >= 560) return 280;
+    return 290;
+  }, [vw]);
 
 
 
   return (
-    <section className="pt-16 overflow-x-hidden overflow-y-visible">{/* clears 64px navbar */}
+    <section id="landing" className="pt-16 min-[960px]:pt-0 overflow-x-hidden overflow-y-visible">
       <h1 className="sr-only">Thilak Voruganti</h1>
       <div className="cards-wrap relative mx-auto w-full isolate  pb-16 md:pb-20">
         <div>
@@ -262,6 +268,12 @@ const copy = useMemo(
             shift={shift}
             onCenterChange={setCenterId}
             trackHeight={trackHeight}
+            onDragStateChange={setIsCarouselDragging}
+            onSwipeBy={(steps) => {
+              if (!steps) return;
+              setShift((s) => ((s + steps) % 5 + 5) % 5);
+              reset();
+            }}
           />
 
           {/* Typing + Controls */}
@@ -269,10 +281,13 @@ const copy = useMemo(
             <div className="relative pointer-events-none" style={{ width: cfg.type.w }}>
               <HeroTypingCard
                 text={current.text}
+                hoverText={current.hoverText}
                 cta={current.cta}
                 to={current.to}
                 type={cfg.type}
                 vw={vw}
+                paused={isCtaHovered || isCarouselDragging}
+                onCtaHoverChange={setIsCtaHovered}
               />
             </div>
           </div>
@@ -281,6 +296,7 @@ const copy = useMemo(
             onPrev={prev}
             onNext={next}
             running={running}
+            interactionPaused={isCtaHovered || isCarouselDragging}
             onToggle={() => setRunning((v) => !v)}
             progress={progress}
           />
@@ -307,12 +323,30 @@ function usePrevious(value) {
   return ref.current;
 }
 /* ===================== Carousel ===================== */
-function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight }) {
+function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onDragStateChange }) {
   const cards = useMemo(() => CARD_DATA, []);
+  const dragStartX = useRef(null);
+  const dragDeltaX = useRef(0);
+  const activePointerId = useRef(null);
+  const snapTimeoutRef = useRef(null);
+  const releaseTimeoutRef = useRef(null);
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isSnapping, setIsSnapping] = useState(false);
+  const [preserveKeys, setPreserveKeys] = useState(false);
+  const DRAG_THRESHOLD = 60;
 
   const GAP = 23;
+  const DRAG_SCALE = 0.95;
+  const STEP_WIDTH = cfg.L.w + GAP;
+  const CYCLE_WIDTH = STEP_WIDTH * cards.length;
   const centerX = vw / 2;
   const centerLeft = centerX - cfg.L.w / 2;
+  const DRAG_W = Math.round(cfg.L.w * DRAG_SCALE);
+  const DRAG_H = Math.round(cfg.L.h * DRAG_SCALE);
+  const dragCenterLeft = centerX - DRAG_W / 2;
+  const DRAG_STEP_WIDTH = DRAG_W + GAP;
+  const DRAG_CYCLE_WIDTH = DRAG_STEP_WIDTH * cards.length;
 
   const vCenter = (h) => Math.round((trackHeight - h) / 2);
 
@@ -353,60 +387,168 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight }) {
     if (centerIdx !== -1) onCenterChange?.(cards[centerIdx].id);
   }, [shift, cards, onCenterChange]);
 
+  useEffect(() => {
+    return () => {
+      onDragStateChange?.(false);
+      if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
+      if (releaseTimeoutRef.current) clearTimeout(releaseTimeoutRef.current);
+    };
+  }, [onDragStateChange]);
+
+  const onPointerDown = (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (snapTimeoutRef.current) {
+      clearTimeout(snapTimeoutRef.current);
+      snapTimeoutRef.current = null;
+    }
+    if (releaseTimeoutRef.current) {
+      clearTimeout(releaseTimeoutRef.current);
+      releaseTimeoutRef.current = null;
+    }
+    setPreserveKeys(true);
+    onDragStateChange?.(true);
+    activePointerId.current = e.pointerId;
+    dragStartX.current = e.clientX;
+    dragDeltaX.current = 0;
+    setIsSnapping(false);
+    setIsDragging(true);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  const onPointerMove = (e) => {
+    if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
+    const delta = e.clientX - dragStartX.current;
+    dragDeltaX.current = delta;
+    setDragX(delta);
+  };
+
+  const onPointerEnd = (e) => {
+    if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
+    const delta = dragDeltaX.current;
+    const steps = Math.abs(delta) >= DRAG_THRESHOLD ? Math.round(-delta / DRAG_STEP_WIDTH) : 0;
+    const snapTargetX = -steps * DRAG_STEP_WIDTH;
+    setIsSnapping(true);
+    setDragX(snapTargetX);
+
+    if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
+    snapTimeoutRef.current = setTimeout(() => {
+      if (steps) onSwipeBy?.(steps);
+      setDragX(0);
+      setIsSnapping(false);
+      setIsDragging(false);
+      onDragStateChange?.(false);
+      if (releaseTimeoutRef.current) clearTimeout(releaseTimeoutRef.current);
+      releaseTimeoutRef.current = setTimeout(() => {
+        setPreserveKeys(false);
+        releaseTimeoutRef.current = null;
+      }, 360);
+      snapTimeoutRef.current = null;
+    }, 190);
+
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    activePointerId.current = null;
+    dragStartX.current = null;
+    dragDeltaX.current = 0;
+  };
+
+  const blockNativeImageDrag = (e) => {
+    e.preventDefault();
+  };
+
   return (
-    <div className="relative mx-auto" style={{ height: trackHeight }}>
+    <div
+      className="relative mx-auto select-none"
+      style={{
+        height: trackHeight,
+        touchAction: "pan-y",
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+      onDragStart={blockNativeImageDrag}
+    >
       {cards.map((card, i) => {
         const prevIdx = slotIdx(i, prevShift);   // where it was last frame
         const nextIdx = slotIdx(i, shift);       // where it should be now
 
         const prevSlot = slots[prevIdx];
         const nextSlot = slots[nextIdx];
+        const activeStepWidth = isDragging ? DRAG_STEP_WIDTH : STEP_WIDTH;
+        const activeCycleWidth = isDragging ? DRAG_CYCLE_WIDTH : CYCLE_WIDTH;
+        const activeCenterLeft = isDragging ? dragCenterLeft : centerLeft;
+        let wrappedLeft = activeCenterLeft + (nextIdx - 2) * activeStepWidth + dragX;
+        const activeW = isDragging ? DRAG_W : cfg.L.w;
+        // Wrap timing: same threshold for both directions.
+        const wrapBuffer = Math.round(activeW * 0.35);
+        const minBand = -wrapBuffer;
+        const maxBand = vw + wrapBuffer;
+        while (wrappedLeft < minBand) wrappedLeft += activeCycleWidth;
+        while (wrappedLeft > maxBand) wrappedLeft -= activeCycleWidth;
 
-        // Wrap rules depend ONLY on slot movement, not on which button you pressed:
-        // Next (anti-clockwise): 0 -> 4  (spawn off-right)
-        // Prev (clockwise)     : 4 -> 0  (spawn off-left)
-        const wrapFromLeftToRight = (prevIdx === 0 && nextIdx === 4);
-        const wrapFromRightToLeft = (prevIdx === 4 && nextIdx === 0);
+        const dragSlot = {
+          left: wrappedLeft,
+          top: vCenter(DRAG_H),
+          w: DRAG_W,
+          h: DRAG_H,
+          z: nextSlot.z ?? (nextIdx === 2 ? 40 : 20),
+          opacity: 1,
+          shadow: "0 16px 48px -10px rgba(0,0,0,0.22)",
+        };
+        const activeNextSlot = isDragging ? dragSlot : nextSlot;
 
-        // next-slot–relative offscreen spawn (robust even when S=0)
-        const nextW = nextSlot.w || cfg.M.w || cfg.L.w;
-        const offRight = nextSlot.left + nextW + GAP + 60;
-        const offLeft  = nextSlot.left - nextW - GAP - 60;
+        // Wrap rules depend ONLY on slot movement, not on which control triggered it.
+        const wrapFromLeftToRight = prevIdx === 0 && nextIdx === 4;
+        const wrapFromRightToLeft = prevIdx === 4 && nextIdx === 0;
+        const isWrapCard = wrapFromLeftToRight || wrapFromRightToLeft;
+        const nextW = activeNextSlot.w || cfg.M.w || cfg.L.w;
+        const offRight = activeNextSlot.left + nextW + GAP + 60;
+        const offLeft = activeNextSlot.left - nextW - GAP - 60;
 
-        const targetOpacity = nextSlot.opacity ?? 1;
+        const targetOpacity = activeNextSlot.opacity ?? 1;
 
         return (
           <motion.div
-            key={`${card.id}-${shift}`}
+            key={(preserveKeys || isDragging || isSnapping) && !isWrapCard ? card.id : `${card.id}-${shift}`}
             className="absolute rounded-2xl overflow-hidden bg-white border border-black/5"
             style={{
-              zIndex: nextSlot.z,
-              boxShadow: nextSlot.shadow,
+              zIndex: activeNextSlot.z,
+              boxShadow: activeNextSlot.shadow,
               pointerEvents: targetOpacity ? "auto" : "none",
               transform: "translateZ(0)",
             }}
             initial={{
-              left: wrapFromLeftToRight ? offRight
-                   : wrapFromRightToLeft ? offLeft
-                   : prevSlot.left,
-              top:   (wrapFromLeftToRight || wrapFromRightToLeft) ? nextSlot.top   : prevSlot.top,
-              width: (wrapFromLeftToRight || wrapFromRightToLeft) ? nextSlot.w     : prevSlot.w,
-              height:(wrapFromLeftToRight || wrapFromRightToLeft) ? nextSlot.h     : prevSlot.h,
+              left: wrapFromLeftToRight
+                ? offRight
+                : wrapFromRightToLeft
+                ? offLeft
+                : prevSlot.left,
+              top: wrapFromLeftToRight || wrapFromRightToLeft ? activeNextSlot.top : prevSlot.top,
+              width: wrapFromLeftToRight || wrapFromRightToLeft ? activeNextSlot.w : prevSlot.w,
+              height: wrapFromLeftToRight || wrapFromRightToLeft ? activeNextSlot.h : prevSlot.h,
               opacity: prevSlot.opacity ?? 1,
             }}
             animate={{
-              left: nextSlot.left,
-              top: nextSlot.top,
-              width: nextSlot.w,
-              height: nextSlot.h,
+              left: activeNextSlot.left,
+              top: activeNextSlot.top,
+              width: activeNextSlot.w,
+              height: activeNextSlot.h,
               opacity: targetOpacity,
             }}
-            transition={{ type: "spring", stiffness: 120, damping: 18, mass: 0.6 }}
+            transition={
+              isDragging && !isSnapping
+                ? { duration: 0 }
+                : isSnapping
+                ? { type: "tween", duration: 0.18, ease: "easeOut" }
+                : { type: "spring", stiffness: 120, damping: 18, mass: 0.6 }
+            }
           >
             <img
               src={card.src}
               alt={card.alt}
               className="w-full h-full object-cover"
+              draggable={false}
+              onDragStart={blockNativeImageDrag}
               loading="lazy"
               decoding="async"
               fetchPriority={nextIdx === 2 ? "high" : "low"}
@@ -419,8 +561,9 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight }) {
 }
 
 /* ===================== Typing Card ===================== */
-function HeroTypingCard({ text, cta, to, type, vw }) {
+function HeroTypingCard({ text, hoverText, cta, to, type, vw, paused = false, onCtaHoverChange }) {
   const navigate = useNavigate();
+  const [hovering, setHovering] = useState(false);
   const padding = vw >= 960 ? "1rem" : "0.75rem 1rem";
   const isDesktop = vw >= 960;
   const dynamicButtonFont = isDesktop
@@ -428,85 +571,101 @@ function HeroTypingCard({ text, cta, to, type, vw }) {
     : Math.max(12, Math.round((type.fs || 18) * 0.45));
   const baseLetterPx = -0.005625 * 16;
   const buttonLetterSpacing = (dynamicButtonFont / 18) * baseLetterPx;
+  const setHoverState = (next) => {
+    setHovering(next);
+    if (typeof onCtaHoverChange === "function") onCtaHoverChange(next);
+  };
+
   return (
-    <div
-      className="rounded-2xl border border-neutral-200 bg-white shadow-[0_18px_60px_-10px_rgba(0,0,0,0.25)] pointer-events-auto"
-      style={{
-        width: type.w,
-        minHeight: type.h,
-        padding,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div>
-        <h2
-          className="font-semibold tracking-tight whitespace-pre-line"
-          style={{
-            fontSize: `${type.fs}px`,
-            lineHeight: `${type.lh}px`,
-          }}
-        >
-          <TypingText
-            text={text}
-            speed={90}
-            punctPause={500}
-            startDelay={300}
-            lineHeightPx={type.lh}
-            fontSize={type.fs}
-          />
-        </h2>
-      </div>
-      <div className={`mt-auto pt-3 ${isDesktop ? "flex justify-end" : ""}`}>
-        <button
-          className={`rounded-xl bg-neutral-900 text-white transition ${isDesktop ? "w-auto px-4" : "w-full"}`}
-          onClick={() => {
-            if (!to) return;
-            trackEvent("cta_click", { section: "landing", label: cta || "Know more", target: to });
-            if (to.startsWith('#')) {
-              const el = document.querySelector(to);
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              return;
-            }
-            if (/^https?:/i.test(to)) {
-              window.open(to, "_blank", "noreferrer");
-            } else {
-              navigate(to);
-            }
-          }}
-          style={{
-            padding: isDesktop ? "0.75rem 1.25rem" : "1rem",
-            fontOpticalSizing: "auto",
-            fontSize: `${dynamicButtonFont}px`,
-            lineHeight: 1.4,
-            letterSpacing: `${buttonLetterSpacing}px`,
-            fontWeight: 480,
-            fontVariationSettings: '"wdth" 98, "wght" 480',
-            margin: 0,
-            textAlign: "center",
-          }}
-        >
-          {cta || "Know more"}
-        </button>
+    <div className={`hero-cta-shell ${hovering ? "is-hover" : ""}`}>
+      <div className="hero-cta-glow" />
+      <div
+        className="hero-typing-card rounded-2xl border border-neutral-200 bg-white shadow-[0_18px_60px_-10px_rgba(0,0,0,0.25)] pointer-events-auto"
+        style={{
+          width: type.w,
+          minHeight: type.h,
+          padding,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div>
+          <h2
+            className="font-semibold tracking-tight whitespace-pre-line"
+            style={{
+              fontSize: `${type.fs}px`,
+              lineHeight: `${type.lh}px`,
+            }}
+          >
+            <span style={{ display: hovering && hoverText ? "none" : "inline" }}>
+              <TypingText
+                text={text}
+                speed={90}
+                punctPause={500}
+                startDelay={300}
+                lineHeightPx={type.lh}
+                fontSize={type.fs}
+                paused={paused}
+              />
+            </span>
+            {hovering && hoverText ? <span>{hoverText}</span> : null}
+          </h2>
+        </div>
+        <div className={`mt-auto pt-3 ${isDesktop ? "flex justify-end" : ""}`}>
+          <button
+            className={`hero-cta-btn rounded-xl text-white transition ${isDesktop ? "w-auto px-4" : "w-full"}`}
+            onMouseEnter={() => setHoverState(true)}
+            onMouseLeave={() => setHoverState(false)}
+            onFocus={() => setHoverState(true)}
+            onBlur={() => setHoverState(false)}
+            onClick={() => {
+              if (!to) return;
+              trackEvent("cta_click", { section: "landing", label: cta || "Know more", target: to });
+              if (to.startsWith('#')) {
+                const el = document.querySelector(to);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+              }
+              if (/^https?:/i.test(to)) {
+                window.open(to, "_blank", "noreferrer");
+              } else {
+                navigate(to);
+              }
+            }}
+            style={{
+              padding: isDesktop ? "0.75rem 1.25rem" : "1rem",
+              fontOpticalSizing: "auto",
+              fontSize: `${dynamicButtonFont}px`,
+              lineHeight: 1.4,
+              letterSpacing: `${buttonLetterSpacing}px`,
+              fontWeight: 480,
+              fontVariationSettings: '"wdth" 98, "wght" 480',
+              margin: 0,
+              textAlign: "center",
+            }}
+          >
+            {cta || "Know more"}
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-function TypingText({ text, speed = 80, punctPause = 450, startDelay = 300, lineHeightPx = 48, fontSize = 36 }) {
+function TypingText({ text, speed = 80, punctPause = 450, startDelay = 300, lineHeightPx = 48, fontSize = 36, paused = false }) {
   const [sub, setSub] = useState(0);
   const [blink, setBlink] = useState(true);
 
   useEffect(() => { setSub(0); setBlink(true); }, [text]);
 
   useEffect(() => {
-    if (!text || sub >= text.length) return;
+    if (!text || sub >= text.length || paused) return;
     const charJustTyped = sub > 0 ? text[sub - 1] : "";
     const isPunct = /[.,!?;:]/.test(charJustTyped);
     const delay = sub === 0 ? startDelay : isPunct ? punctPause : speed;
     const t = setTimeout(() => setSub((v) => v + 1), delay);
     return () => clearTimeout(t);
-  }, [sub, text, speed, punctPause, startDelay]);
+  }, [sub, text, speed, punctPause, startDelay, paused]);
 
   useEffect(() => {
     if (!text || sub >= text.length) return;
@@ -535,7 +694,7 @@ function TypingText({ text, speed = 80, punctPause = 450, startDelay = 300, line
 }
 
 /* ===================== Controls (Prev / TimerRing / Next) ===================== */
-function Controls({ vw, onPrev, onNext, running, onToggle, progress }) {
+function Controls({ vw, onPrev, onNext, running, interactionPaused = false, onToggle, progress }) {
   // Timer ring
   const size = 40;
   const stroke = 3;
@@ -543,6 +702,7 @@ function Controls({ vw, onPrev, onNext, running, onToggle, progress }) {
   const C = 2 * Math.PI * rCircle;
   const dash = C;
   const offset = C * (1 - progress);
+  const showPauseIcon = running && !interactionPaused;
 
   const layout = useMemo(() => {
     if (vw >= 1440) return { paddingX: 48, marginTop: 0, justify: "flex-end" };
@@ -576,7 +736,7 @@ function Controls({ vw, onPrev, onNext, running, onToggle, progress }) {
 
       {/* Play/Pause + progress ring */}
       <button
-        aria-label={running ? "Pause" : "Play"}
+        aria-label={showPauseIcon ? "Pause" : "Play"}
         onClick={onToggle}
         className="relative h-10 w-10 rounded-full grid place-items-center bg-white border border-black/10 shadow-sm hover:bg-neutral-50 active:scale-95 transition"
       >
@@ -587,10 +747,15 @@ function Controls({ vw, onPrev, onNext, running, onToggle, progress }) {
             stroke="currentColor" strokeWidth={stroke} fill="none"
             strokeDasharray={dash} strokeDashoffset={offset}
             transform={`rotate(-90 ${size / 2} ${size / 2})`}
-            style={{ transition: "stroke-dashoffset 80ms linear" }}
+            style={{
+              transition:
+                running && !interactionPaused
+                  ? "none"
+                  : "stroke-dashoffset 120ms linear",
+            }}
           />
         </svg>
-        {running ? (
+        {showPauseIcon ? (
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
             <rect x="6" y="5" width="4" height="14" rx="1.2" fill="currentColor" />
             <rect x="14" y="5" width="4" height="14" rx="1.2" fill="currentColor" />
