@@ -14,8 +14,7 @@ const requiredAnalyticsKeys = ['apiKey', 'appId', 'measurementId'];
 const missingAnalyticsKeys = requiredAnalyticsKeys.filter((key) => !firebaseConfig[key]);
 
 if (missingAnalyticsKeys.length && !isProduction) {
-  // Surface misconfiguration early during local development
-  console.warn(
+  throw new Error(
     `[env] Missing Firebase analytics keys: ${missingAnalyticsKeys.join(', ')}`
   );
 }
