@@ -13,6 +13,9 @@ const cards = [
     src: CERT_GIF,
     alt: "Certification badges animation",
     body: "Industry-recognized certifications validating strong engineering fundamentals.",
+    href: EXTERNAL_LINKS.credly,
+    cta: "Explore Credly badges",
+    eventName: "about_certifications_click",
   },
   {
     title: "Leet Code",
@@ -21,7 +24,7 @@ const cards = [
     alt: "LeetCode profile animation",
     body: "Regular problem solving to strengthen algorithms and data structures.",
     href: EXTERNAL_LINKS.leetcode,
-    cta: "View LeetCode profile",
+    cta: "Explore LeetCode profile",
     eventName: "about_leetcode_click",
   },
   {
@@ -30,6 +33,9 @@ const cards = [
     src: IMPACT_GIF,
     alt: "Impact metrics animation",
     body: "Production systems serving millions of users, backed by academic and industry experience.",
+    href: EXTERNAL_LINKS.linkedin,
+    cta: "View LinkedIn profile",
+    eventName: "about_impact_click",
   },
 ];
 
@@ -113,15 +119,22 @@ export default function Aboutme() {
                   href={card.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-2 text-base font-medium text-neutral-900 underline underline-offset-4"
+                  className="group relative inline-flex items-center text-[24px] leading-[30px] font-semibold text-neutral-900"
                   onClick={() => {
                     if (card.eventName) {
                       trackEvent(card.eventName, { label: card.title, target: card.href });
                     }
                   }}
                 >
-                  {card.cta}
-                  <span aria-hidden="true">→</span>
+                  <span
+                    aria-hidden="true"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 text-[26px] opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:text-black group-focus-visible:opacity-100 group-focus-visible:text-black"
+                  >
+                    →
+                  </span>
+                  <span className="transition-all duration-200 group-hover:pl-8 group-focus-visible:pl-8">
+                    {card.cta}
+                  </span>
                 </a>
               ) : null}
             </div>

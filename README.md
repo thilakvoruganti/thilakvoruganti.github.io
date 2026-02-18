@@ -56,17 +56,19 @@ Additional reference assets live under `docs/`:
 | `npm run build` | Production build (used for GitHub Pages) |
 | `npm run lint` / `npm run lint:fix` | ESLint with `react-app` + Prettier rules |
 | `npm run format` / `npm run format:check` | Prettier for JS/SCSS/CSS/JSON/MD |
-| `npm run deploy` | Build + push `build/` to the GitHub Pages repo |
+| `npm run deploy` | Manual production publish (falls back to gh-pages CLI) |
 
 ## Analytics
 - `initAnalytics()` (called in `src/index.js`) bootstraps Firebase only when production env + keys exist.
 - `trackEntrySource()` logs a `portfolio_entry` event once per session, capturing `source`, `utm_*`, referrer, and landing path.
 - CTA, nav, and social clicks emit semantic events (e.g., `nav_resume_click`, `project_ec_click`) to map engagement funnels.
 
-## Deployment
-1. Run `npm run lint && npm run build` locally or via CI.
-2. Deploy to GitHub Pages either via the `deploy` script or an Actions workflow (see `.github/workflows/ci.yml`).
-3. Ensure DNS points `thilakvoruganti.me` to GitHub Pages; `public/CNAME` keeps the custom domain active.
+## Deployment & Environments
+- **Branch strategy:** `master` is production (served at `thilakvoruganti.me`). Create/keep a long-lived `uat` branch for staging. Build new features on short-lived branches, open PRs into `uat`, and merge to `master` only after UAT looks good. Keep `uat` periodically rebased on `master` to avoid drift.
+- **GitHub Actions (preferred):** `.github/workflows/deploy.yml` now builds on pushes and PRs for both `master` and `uat`. Pushes to `uat` publish a Pages deployment labeled **uat** (preview URL, no custom domain). `master` pushes publish **production** (custom domain). PRs targeting either branch get their own preview link (`View deployment`) so you can QA before merging.
+- **Repo settings:** Under `Settings → Pages → Build and deployment`, keep **GitHub Actions** selected so deployments always flow through the workflow.
+- **Manual fallback:** `npm run deploy` still exists if you need to push directly, but avoid using it unless CI is unavailable.
+- **DNS:** `public/CNAME` keeps `thilakvoruganti.me` mapped to the production Pages host only; staging keeps the default GitHub Pages URL.
 
 ## Contributing / Notes
 - Use the provided Prettier + ESLint configs before opening PRs.

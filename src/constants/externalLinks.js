@@ -7,6 +7,7 @@ export const EXTERNAL_LINKS = Object.freeze({
   linkedin: "https://www.linkedin.com/in/thilakvoruganti/",
   github: "https://github.com/thilakvoruganti",
   leetcode: "https://leetcode.com/u/thilakvoruganti/",
+  credly: "https://www.credly.com/users/voruganti-thilak-goud",
   email: CONTACT_EMAIL_MAILTO,
   emailAddress: CONTACT_EMAIL,
 });
