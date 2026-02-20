@@ -119,21 +119,23 @@ export default function Aboutme() {
                   href={card.href}
                   target="_blank"
                   rel="noreferrer"
-                  className="group relative inline-flex items-center text-[24px] leading-[30px] font-semibold text-neutral-900"
+                  className="group inline-flex w-fit items-center text-[15px] leading-[22px] font-medium text-neutral-900 underline decoration-[1.25px] underline-offset-[6px] tracking-tight transition-colors duration-200 hover:text-black focus-visible:text-black"
                   onClick={() => {
                     if (card.eventName) {
                       trackEvent(card.eventName, { label: card.title, target: card.href });
                     }
                   }}
                 >
-                  <span
-                    aria-hidden="true"
-                    className="absolute left-0 top-1/2 -translate-y-1/2 text-[26px] opacity-0 transition-all duration-200 group-hover:opacity-100 group-hover:text-black group-focus-visible:opacity-100 group-focus-visible:text-black"
-                  >
-                    →
-                  </span>
-                  <span className="transition-all duration-200 group-hover:pl-8 group-focus-visible:pl-8">
-                    {card.cta}
+                  <span className="inline-flex items-center">
+                    <span
+                      aria-hidden="true"
+                      className="inline-block max-w-0 overflow-hidden text-[17px] opacity-0 transition-all duration-200 group-hover:max-w-[18px] group-hover:opacity-100 group-focus-visible:max-w-[18px] group-focus-visible:opacity-100"
+                    >
+                      →
+                    </span>
+                    <span className="ml-0 transition-all duration-200 group-hover:ml-1 group-focus-visible:ml-1">
+                      {card.cta}
+                    </span>
                   </span>
                 </a>
               ) : null}
