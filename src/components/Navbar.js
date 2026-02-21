@@ -22,6 +22,23 @@ export default function Navbar() {
   const toggle = () => setOpen((v) => !v);
   const close = useCallback(() => setOpen(false), []);
   const scrollTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+  const scrollWithOffset = useCallback((id) => {
+    if (typeof window === "undefined" || typeof document === "undefined") return false;
+    const el = document.getElementById(id);
+    if (!el) return false;
+    const header = document.querySelector(".fig-1jciw8t");
+    const headerHeight = header?.offsetHeight ?? 80;
+    const target = el.getBoundingClientRect().top + window.scrollY - headerHeight;
+    window.scrollTo({ top: Math.max(0, target), behavior: "smooth" });
+    return true;
+  }, []);
+  const scrollNative = useCallback((id) => {
+    if (typeof document === "undefined") return false;
+    const el = document.getElementById(id);
+    if (!el) return false;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    return true;
+  }, []);
 
   useEffect(() => {
     const onKey = (e) => e.key === "Escape" && close();
@@ -38,15 +55,8 @@ export default function Navbar() {
 
   const scrollToSection = useCallback(
     (id) => {
-      const runScroll = () => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "start" });
-          return true;
-        }
-        return false;
-      };
-
+      const needsOffset = id === "about" || id === "experience";
+      const runScroll = () => (needsOffset ? scrollWithOffset(id) : scrollNative(id));
       close();
       if (location.pathname !== "/") {
         navigate("/");
@@ -61,7 +71,7 @@ export default function Navbar() {
         runScroll();
       }
     },
-    [close, location.pathname, navigate]
+    [close, location.pathname, navigate, scrollNative, scrollWithOffset]
   );
 
   const sectionItems = useMemo(
