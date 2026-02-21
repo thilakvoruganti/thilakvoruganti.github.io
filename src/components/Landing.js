@@ -214,11 +214,10 @@ const copy = useMemo(
   /* autoplay + ring */
   const [running, setRunning] = useState(true);
   const [isCtaHovered, setIsCtaHovered] = useState(false);
-  const [isCarouselDragging, setIsCarouselDragging] = useState(false);
   const durationMs = 8000; // <- 8s highlight duration
   const onTick = useCallback(() => setShift((s) => (s + 1) % 5), []);
   const { elapsed, reset } = useAutoRotate({
-    running: running && !isCtaHovered && !isCarouselDragging,
+    running: running && !isCtaHovered,
     durationMs,
     onTick,
   });
@@ -268,12 +267,6 @@ const copy = useMemo(
             shift={shift}
             onCenterChange={setCenterId}
             trackHeight={trackHeight}
-            onDragStateChange={setIsCarouselDragging}
-            onSwipeBy={(steps) => {
-              if (!steps) return;
-              setShift((s) => ((s + steps) % 5 + 5) % 5);
-              reset();
-            }}
           />
 
           {/* Typing + Controls */}
@@ -286,7 +279,7 @@ const copy = useMemo(
                 to={current.to}
                 type={cfg.type}
                 vw={vw}
-                paused={isCtaHovered || isCarouselDragging}
+                paused={isCtaHovered}
                 onCtaHoverChange={setIsCtaHovered}
               />
             </div>
@@ -296,7 +289,7 @@ const copy = useMemo(
             onPrev={prev}
             onNext={next}
             running={running}
-            interactionPaused={isCtaHovered || isCarouselDragging}
+            interactionPaused={isCtaHovered}
             onToggle={() => setRunning((v) => !v)}
             progress={progress}
           />
@@ -323,31 +316,12 @@ function usePrevious(value) {
   return ref.current;
 }
 /* ===================== Carousel ===================== */
-function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onDragStateChange }) {
+function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight }) {
   const cards = useMemo(() => CARD_DATA, []);
-  const dragStartX = useRef(null);
-  const dragDeltaX = useRef(0);
-  const activePointerId = useRef(null);
-  const snapTimeoutRef = useRef(null);
-  const releaseTimeoutRef = useRef(null);
-  const [dragX, setDragX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [isSnapping, setIsSnapping] = useState(false);
-  const [preserveKeys, setPreserveKeys] = useState(false);
-  const DRAG_THRESHOLD = 60;
 
   const GAP = 23;
-  const DRAG_SCALE = 0.95;
-  const STEP_WIDTH = cfg.L.w + GAP;
-  const CYCLE_WIDTH = STEP_WIDTH * cards.length;
   const centerX = vw / 2;
   const centerLeft = centerX - cfg.L.w / 2;
-  const DRAG_W = Math.round(cfg.L.w * DRAG_SCALE);
-  const DRAG_H = Math.round(cfg.L.h * DRAG_SCALE);
-  const dragCenterLeft = centerX - DRAG_W / 2;
-  const DRAG_STEP_WIDTH = DRAG_W + GAP;
-  const DRAG_CYCLE_WIDTH = DRAG_STEP_WIDTH * cards.length;
-
   const vCenter = (h) => Math.round((trackHeight - h) / 2);
 
   const slots = [
@@ -358,12 +332,37 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
         ? centerLeft - GAP - cfg.M.w - GAP - cfg.S.w
         : centerLeft - GAP - cfg.M.w - GAP - (cfg.S.w || 0) - 200,
       top: vCenter(cfg.visibleOuter ? cfg.S.h : cfg.M.h),
-      z: 10, opacity: cfg.visibleOuter ? 1 : 0,
+      z: 10,
+      opacity: cfg.visibleOuter ? 1 : 0,
       shadow: "0 12px 40px -10px rgba(0,0,0,0.18)",
     },
-    { w: cfg.M.w, h: cfg.M.h, left: centerLeft - GAP - cfg.M.w, top: vCenter(cfg.M.h), z: 20, opacity: 1, shadow: "0 16px 50px -10px rgba(0,0,0,0.2)" },
-    { w: cfg.L.w, h: cfg.L.h, left: centerLeft,                  top: vCenter(cfg.L.h), z: 40, opacity: 1, shadow: "0 24px 70px -12px rgba(0,0,0,0.26)" },
-    { w: cfg.M.w, h: cfg.M.h, left: centerLeft + cfg.L.w + GAP,  top: vCenter(cfg.M.h), z: 20, opacity: 1, shadow: "0 16px 50px -10px rgba(0,0,0,0.2)" },
+    {
+      w: cfg.M.w,
+      h: cfg.M.h,
+      left: centerLeft - GAP - cfg.M.w,
+      top: vCenter(cfg.M.h),
+      z: 20,
+      opacity: 1,
+      shadow: "0 16px 50px -10px rgba(0,0,0,0.2)",
+    },
+    {
+      w: cfg.L.w,
+      h: cfg.L.h,
+      left: centerLeft,
+      top: vCenter(cfg.L.h),
+      z: 40,
+      opacity: 1,
+      shadow: "0 24px 70px -12px rgba(0,0,0,0.26)",
+    },
+    {
+      w: cfg.M.w,
+      h: cfg.M.h,
+      left: centerLeft + cfg.L.w + GAP,
+      top: vCenter(cfg.M.h),
+      z: 20,
+      opacity: 1,
+      shadow: "0 16px 50px -10px rgba(0,0,0,0.2)",
+    },
     {
       w: cfg.visibleOuter ? cfg.S.w : 0,
       h: cfg.visibleOuter ? cfg.S.h : 0,
@@ -371,15 +370,13 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
         ? centerLeft + cfg.L.w + GAP + cfg.M.w + GAP
         : centerLeft + cfg.L.w + GAP + cfg.M.w + GAP + 200,
       top: vCenter(cfg.visibleOuter ? cfg.S.h : cfg.M.h),
-      z: 10, opacity: cfg.visibleOuter ? 1 : 0,
+      z: 10,
+      opacity: cfg.visibleOuter ? 1 : 0,
       shadow: "0 12px 40px -10px rgba(0,0,0,0.18)",
     },
   ];
 
-  // map "card index → slot index" for a given shift
   const slotIdx = (i, s) => (i + 2 - (s % 5) + 5) % 5;
-
-  // <<< the important part
   const prevShift = usePrevious(shift) ?? shift;
 
   useEffect(() => {
@@ -387,133 +384,29 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
     if (centerIdx !== -1) onCenterChange?.(cards[centerIdx].id);
   }, [shift, cards, onCenterChange]);
 
-  useEffect(() => {
-    return () => {
-      onDragStateChange?.(false);
-      if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
-      if (releaseTimeoutRef.current) clearTimeout(releaseTimeoutRef.current);
-    };
-  }, [onDragStateChange]);
-
-  const onPointerDown = (e) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    if (snapTimeoutRef.current) {
-      clearTimeout(snapTimeoutRef.current);
-      snapTimeoutRef.current = null;
-    }
-    if (releaseTimeoutRef.current) {
-      clearTimeout(releaseTimeoutRef.current);
-      releaseTimeoutRef.current = null;
-    }
-    setPreserveKeys(true);
-    onDragStateChange?.(true);
-    activePointerId.current = e.pointerId;
-    dragStartX.current = e.clientX;
-    dragDeltaX.current = 0;
-    setIsSnapping(false);
-    setIsDragging(true);
-    e.currentTarget.setPointerCapture?.(e.pointerId);
-  };
-
-  const onPointerMove = (e) => {
-    if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
-    const delta = e.clientX - dragStartX.current;
-    dragDeltaX.current = delta;
-    setDragX(delta);
-  };
-
-  const onPointerEnd = (e) => {
-    if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
-    const delta = dragDeltaX.current;
-    const steps = Math.abs(delta) >= DRAG_THRESHOLD ? Math.round(-delta / DRAG_STEP_WIDTH) : 0;
-    const snapTargetX = -steps * DRAG_STEP_WIDTH;
-    setIsSnapping(true);
-    setDragX(snapTargetX);
-
-    if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
-    snapTimeoutRef.current = setTimeout(() => {
-      if (steps) onSwipeBy?.(steps);
-      setDragX(0);
-      setIsSnapping(false);
-      setIsDragging(false);
-      onDragStateChange?.(false);
-      if (releaseTimeoutRef.current) clearTimeout(releaseTimeoutRef.current);
-      releaseTimeoutRef.current = setTimeout(() => {
-        setPreserveKeys(false);
-        releaseTimeoutRef.current = null;
-      }, 360);
-      snapTimeoutRef.current = null;
-    }, 190);
-
-    e.currentTarget.releasePointerCapture?.(e.pointerId);
-    activePointerId.current = null;
-    dragStartX.current = null;
-    dragDeltaX.current = 0;
-  };
-
-  const blockNativeImageDrag = (e) => {
-    e.preventDefault();
-  };
-
   return (
-    <div
-      className="relative mx-auto select-none"
-      style={{
-        height: trackHeight,
-        touchAction: "pan-y",
-      }}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerEnd}
-      onPointerCancel={onPointerEnd}
-      onDragStart={blockNativeImageDrag}
-    >
+    <div className="relative mx-auto" style={{ height: trackHeight }}>
       {cards.map((card, i) => {
-        const prevIdx = slotIdx(i, prevShift);   // where it was last frame
-        const nextIdx = slotIdx(i, shift);       // where it should be now
+        const prevIdx = slotIdx(i, prevShift);
+        const nextIdx = slotIdx(i, shift);
 
         const prevSlot = slots[prevIdx];
         const nextSlot = slots[nextIdx];
-        const activeStepWidth = isDragging ? DRAG_STEP_WIDTH : STEP_WIDTH;
-        const activeCycleWidth = isDragging ? DRAG_CYCLE_WIDTH : CYCLE_WIDTH;
-        const activeCenterLeft = isDragging ? dragCenterLeft : centerLeft;
-        let wrappedLeft = activeCenterLeft + (nextIdx - 2) * activeStepWidth + dragX;
-        const activeW = isDragging ? DRAG_W : cfg.L.w;
-        // Wrap timing: same threshold for both directions.
-        const wrapBuffer = Math.round(activeW * 0.35);
-        const minBand = -wrapBuffer;
-        const maxBand = vw + wrapBuffer;
-        while (wrappedLeft < minBand) wrappedLeft += activeCycleWidth;
-        while (wrappedLeft > maxBand) wrappedLeft -= activeCycleWidth;
 
-        const dragSlot = {
-          left: wrappedLeft,
-          top: vCenter(DRAG_H),
-          w: DRAG_W,
-          h: DRAG_H,
-          z: nextSlot.z ?? (nextIdx === 2 ? 40 : 20),
-          opacity: 1,
-          shadow: "0 16px 48px -10px rgba(0,0,0,0.22)",
-        };
-        const activeNextSlot = isDragging ? dragSlot : nextSlot;
-
-        // Wrap rules depend ONLY on slot movement, not on which control triggered it.
         const wrapFromLeftToRight = prevIdx === 0 && nextIdx === 4;
         const wrapFromRightToLeft = prevIdx === 4 && nextIdx === 0;
-        const isWrapCard = wrapFromLeftToRight || wrapFromRightToLeft;
-        const nextW = activeNextSlot.w || cfg.M.w || cfg.L.w;
-        const offRight = activeNextSlot.left + nextW + GAP + 60;
-        const offLeft = activeNextSlot.left - nextW - GAP - 60;
-
-        const targetOpacity = activeNextSlot.opacity ?? 1;
+        const nextW = nextSlot.w || cfg.M.w || cfg.L.w;
+        const offRight = nextSlot.left + nextW + GAP + 60;
+        const offLeft = nextSlot.left - nextW - GAP - 60;
+        const targetOpacity = nextSlot.opacity ?? 1;
 
         return (
           <motion.div
-            key={(preserveKeys || isDragging || isSnapping) && !isWrapCard ? card.id : `${card.id}-${shift}`}
+            key={`${card.id}-${shift}`}
             className="absolute rounded-2xl overflow-hidden bg-white border border-black/5"
             style={{
-              zIndex: activeNextSlot.z,
-              boxShadow: activeNextSlot.shadow,
+              zIndex: nextSlot.z,
+              boxShadow: nextSlot.shadow,
               pointerEvents: targetOpacity ? "auto" : "none",
               transform: "translateZ(0)",
             }}
@@ -523,32 +416,24 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
                 : wrapFromRightToLeft
                 ? offLeft
                 : prevSlot.left,
-              top: wrapFromLeftToRight || wrapFromRightToLeft ? activeNextSlot.top : prevSlot.top,
-              width: wrapFromLeftToRight || wrapFromRightToLeft ? activeNextSlot.w : prevSlot.w,
-              height: wrapFromLeftToRight || wrapFromRightToLeft ? activeNextSlot.h : prevSlot.h,
+              top: wrapFromLeftToRight || wrapFromRightToLeft ? nextSlot.top : prevSlot.top,
+              width: wrapFromLeftToRight || wrapFromRightToLeft ? nextSlot.w : prevSlot.w,
+              height: wrapFromLeftToRight || wrapFromRightToLeft ? nextSlot.h : prevSlot.h,
               opacity: prevSlot.opacity ?? 1,
             }}
             animate={{
-              left: activeNextSlot.left,
-              top: activeNextSlot.top,
-              width: activeNextSlot.w,
-              height: activeNextSlot.h,
+              left: nextSlot.left,
+              top: nextSlot.top,
+              width: nextSlot.w,
+              height: nextSlot.h,
               opacity: targetOpacity,
             }}
-            transition={
-              isDragging && !isSnapping
-                ? { duration: 0 }
-                : isSnapping
-                ? { type: "tween", duration: 0.18, ease: "easeOut" }
-                : { type: "spring", stiffness: 120, damping: 18, mass: 0.6 }
-            }
+            transition={{ type: "spring", stiffness: 120, damping: 18, mass: 0.6 }}
           >
             <img
               src={card.src}
               alt={card.alt}
               className="w-full h-full object-cover"
-              draggable={false}
-              onDragStart={blockNativeImageDrag}
               loading="lazy"
               decoding="async"
               fetchPriority={nextIdx === 2 ? "high" : "low"}
