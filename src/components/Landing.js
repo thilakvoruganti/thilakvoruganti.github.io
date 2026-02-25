@@ -328,10 +328,11 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
   const [isPointerDown, setIsPointerDown] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const dragReleaseTimeoutRef = useRef(null);
-  const MOUSE_DRAG_THRESHOLD = 30;
-  const TOUCH_DRAG_THRESHOLD = 10;
-  const FLICK_VELOCITY_THRESHOLD = 0.16; // px/ms
-  const FLICK_DISTANCE_MIN = 3;
+  const MOUSE_DRAG_THRESHOLD = 40;
+  const TOUCH_DRAG_THRESHOLD = 24;
+  const FLICK_VELOCITY_THRESHOLD = 0.35; // px/ms
+  const FLICK_DISTANCE_MIN = 10;
+  const STEP_SWITCH_RATIO = vw >= 960 ? 0.5 : 0.2; // desktop 50%, mobile/tablet 20%
   const slideSize = cfg.L.w;
   const baseTrackX = Math.round((vw - slideSize) / 2);
   const virtualShift = shift - dragX / slideSize;
@@ -403,7 +404,7 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
     if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
     const delta = e.clientX - dragStartX.current;
     dragDeltaX.current = delta;
-    if (Math.abs(delta) > 0.5 && !isDragging) setIsDragging(true);
+    if (Math.abs(delta) > 2 && !isDragging) setIsDragging(true);
     setDragX(delta);
   };
 
@@ -415,9 +416,10 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
     const velocity = Math.abs(delta) / elapsed;
     const dragThreshold = pointerTypeRef.current === "touch" ? TOUCH_DRAG_THRESHOLD : MOUSE_DRAG_THRESHOLD;
     const isFlick = Math.abs(delta) >= FLICK_DISTANCE_MIN && velocity >= FLICK_VELOCITY_THRESHOLD;
+    const distanceStepThreshold = slideSize * STEP_SWITCH_RATIO;
     const rawSteps =
       Math.abs(delta) >= dragThreshold
-        ? Math.round(-delta / slideSize)
+        ? Math.round(-delta / distanceStepThreshold)
         : isFlick
         ? (delta < 0 ? 1 : -1)
         : 0;

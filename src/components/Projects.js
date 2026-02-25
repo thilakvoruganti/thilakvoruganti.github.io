@@ -67,10 +67,11 @@ export default function Projects() {
   const dragDeltaXRef = useRef(0);
   const activePointerIdRef = useRef(null);
   const didDragRef = useRef(false);
-  const MOUSE_DRAG_THRESHOLD = 28;
-  const TOUCH_DRAG_THRESHOLD = 8;
-  const FLICK_VELOCITY_THRESHOLD = 0.12; // px/ms
-  const FLICK_DISTANCE_MIN = 2;
+  const MOUSE_DRAG_THRESHOLD = 40;
+  const TOUCH_DRAG_THRESHOLD = 24;
+  const FLICK_VELOCITY_THRESHOLD = 0.35; // px/ms
+  const FLICK_DISTANCE_MIN = 10;
+  const STEP_SWITCH_RATIO = vw >= 960 ? 0.5 : 0.2; // desktop 50%, mobile/tablet 20%
   const pointerTypeRef = useRef("mouse");
 
   const advanceBy = useCallback(
@@ -118,12 +119,21 @@ export default function Projects() {
     if (dragStartXRef.current == null || activePointerIdRef.current !== e.pointerId) return;
     const delta = e.clientX - dragStartXRef.current;
     dragDeltaXRef.current = delta;
-    if (Math.abs(delta) > 0.5) {
+    if (Math.abs(delta) > 2) {
       didDragRef.current = true;
       if (!isDragging) setIsDragging(true);
     }
     setDragX(delta);
   }, [isDragging]);
+
+  const resetGesture = useCallback(() => {
+    setDragX(0);
+    setIsDragging(false);
+    activePointerIdRef.current = null;
+    dragStartXRef.current = null;
+    dragStartTimeRef.current = 0;
+    dragDeltaXRef.current = 0;
+  }, []);
 
   const onPointerEnd = useCallback(
     (e) => {
@@ -134,15 +144,14 @@ export default function Projects() {
       const velocity = Math.abs(delta) / elapsed;
       const dragThreshold = pointerTypeRef.current === "touch" ? TOUCH_DRAG_THRESHOLD : MOUSE_DRAG_THRESHOLD;
       const isFlick = Math.abs(delta) >= FLICK_DISTANCE_MIN && velocity >= FLICK_VELOCITY_THRESHOLD;
+      const distanceStepThreshold = layout.step * STEP_SWITCH_RATIO;
       const rawSteps =
         Math.abs(delta) >= dragThreshold
-          ? Math.round(-delta / layout.step)
+          ? Math.round(-delta / distanceStepThreshold)
           : isFlick
           ? (delta < 0 ? 1 : -1)
           : 0;
       const steps = Math.max(-2, Math.min(2, rawSteps));
-      setDragX(0);
-      setIsDragging(false);
       if (steps) advanceBy(steps);
       try {
         if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
@@ -151,14 +160,20 @@ export default function Projects() {
       } catch (_error) {
         // Mobile browsers can cancel pointers and invalidate capture before release.
       } finally {
-        activePointerIdRef.current = null;
-        dragStartXRef.current = null;
-        dragStartTimeRef.current = 0;
-        dragDeltaXRef.current = 0;
+        resetGesture();
       }
     },
-    [advanceBy, layout.step]
+    [advanceBy, layout.step, resetGesture, STEP_SWITCH_RATIO]
   );
+
+  const onPointerCancel = useCallback(() => {
+    resetGesture();
+  }, [resetGesture]);
+
+  const onLostPointerCapture = useCallback(() => {
+    // Some mobile browsers end touch sequences via lostpointercapture without pointerup.
+    resetGesture();
+  }, [resetGesture]);
 
   const blockNativeDrag = useCallback((e) => {
     e.preventDefault();
@@ -202,7 +217,8 @@ export default function Projects() {
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerEnd}
-            onPointerCancel={onPointerEnd}
+            onPointerCancel={onPointerCancel}
+            onLostPointerCapture={onLostPointerCapture}
             onDragStart={blockNativeDrag}
           >
             <div
