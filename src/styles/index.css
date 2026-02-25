@@ -51,6 +51,8 @@
 .hero-typing-card {
   position: relative;
   z-index: 1;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 20px 36px rgba(15, 23, 42, 0.12), 0 6px 14px rgba(15, 23, 42, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 .hero-cta-btn {
@@ -64,6 +66,104 @@
   color: #ffffff;
 }
 
+.hero-carousel-shell {
+  overflow: visible;
+}
+
+.landing-carousel-track-clip {
+  margin-inline: 0;
+  overflow-y: visible;
+}
+
+.landing-carousel-track-frame {
+  --slide-spacing: 0rem;
+  --slide-size: 490px;
+  --slide-height: 653px;
+  position: relative;
+  height: var(--slide-height);
+}
+
+.landing-carousel-track {
+  backface-visibility: hidden;
+  display: flex;
+  align-items: center;
+  touch-action: pan-y pinch-zoom;
+  height: 100%;
+  will-change: transform;
+}
+
+.landing-carousel-slide {
+  min-width: 0;
+  flex: 0 0 var(--slide-size);
+  transform: translate3d(0, 0, 0);
+  cursor: grab;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.landing-carousel-slide:active {
+  cursor: grabbing;
+}
+
+.landing-carousel-slide-content {
+  width: 100%;
+  height: var(--slide-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform, opacity;
+}
+
+.landing-carousel-card-shell {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+.landing-carousel-card-shell-inner {
+  width: 100%;
+  height: 100%;
+}
+
+.landing-carousel-card-shell-inner > div {
+  width: 100%;
+  height: 100%;
+}
+
+.landing-carousel-card-surface {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.08), 0 4px 12px rgba(15, 23, 42, 0.06);
+}
+
+.landing-carousel-slide[aria-hidden=false] .landing-carousel-card-surface {
+  box-shadow: 0 26px 52px rgba(15, 23, 42, 0.14), 0 8px 20px rgba(15, 23, 42, 0.08);
+}
+
+.hero-carousel-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  -o-object-fit: cover;
+     object-fit: cover;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  pointer-events: none;
+}
+
+@media (max-width: 959px) {
+  .landing-carousel-card-surface {
+    border-radius: 14px;
+  }
+}
 @keyframes hero-cta-spin {
   to {
     --angle: 360deg;
@@ -71,7 +171,7 @@
 }
 .exps {
   position: relative;
-  height: 400vh; /* gives sticky room to work */
+  height: 320vh; /* gives sticky room to work */
   width: 100%;
 }
 .exps h2 {

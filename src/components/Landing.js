@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { EXTERNAL_LINKS } from "../constants";
 import { trackEvent } from "../lib/firebaseAnalytics";
@@ -317,101 +316,79 @@ const copy = useMemo(
     </section>
   );
 }
-function usePrevious(value) {
-  const ref = useRef(value);
-  useEffect(() => { ref.current = value; }, [value]);
-  return ref.current;
-}
 /* ===================== Carousel ===================== */
 function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onDragStateChange }) {
   const cards = useMemo(() => CARD_DATA, []);
   const dragStartX = useRef(null);
   const dragDeltaX = useRef(0);
   const activePointerId = useRef(null);
-  const snapTimeoutRef = useRef(null);
-  const releaseTimeoutRef = useRef(null);
   const [dragX, setDragX] = useState(0);
+  const [isPointerDown, setIsPointerDown] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [isSnapping, setIsSnapping] = useState(false);
-  const [preserveKeys, setPreserveKeys] = useState(false);
-  const DRAG_THRESHOLD = 60;
-
-  const GAP = 23;
-  const DRAG_SCALE = 0.95;
-  const STEP_WIDTH = cfg.L.w + GAP;
-  const CYCLE_WIDTH = STEP_WIDTH * cards.length;
-  const centerX = vw / 2;
-  const centerLeft = centerX - cfg.L.w / 2;
-  const DRAG_W = Math.round(cfg.L.w * DRAG_SCALE);
-  const DRAG_H = Math.round(cfg.L.h * DRAG_SCALE);
-  const dragCenterLeft = centerX - DRAG_W / 2;
-  const DRAG_STEP_WIDTH = DRAG_W + GAP;
-  const DRAG_CYCLE_WIDTH = DRAG_STEP_WIDTH * cards.length;
-
-  const vCenter = (h) => Math.round((trackHeight - h) / 2);
-
-  const slots = [
-    {
-      w: cfg.visibleOuter ? cfg.S.w : 0,
-      h: cfg.visibleOuter ? cfg.S.h : 0,
-      left: cfg.visibleOuter
-        ? centerLeft - GAP - cfg.M.w - GAP - cfg.S.w
-        : centerLeft - GAP - cfg.M.w - GAP - (cfg.S.w || 0) - 200,
-      top: vCenter(cfg.visibleOuter ? cfg.S.h : cfg.M.h),
-      z: 10, opacity: cfg.visibleOuter ? 1 : 0,
-      shadow: "0 12px 40px -10px rgba(0,0,0,0.18)",
+  const dragReleaseTimeoutRef = useRef(null);
+  const DRAG_THRESHOLD = 48;
+  const slideSize = cfg.L.w;
+  const baseTrackX = Math.round((vw - slideSize) / 2);
+  const virtualShift = shift - dragX / slideSize;
+  const getSlideVisual = useCallback(
+    (relative) => {
+      const desktopNear = cfg.L.w * (33 / 490);
+      const desktopFar = cfg.L.w * (131 / 490);
+      const mobileNear = cfg.L.w * (22.4 / 384);
+      const mobileFar = cfg.L.w * (88 / 384);
+      const desktop = {
+        x: [desktopFar, desktopNear, 0, -desktopNear, -desktopFar],
+        scale: [0.7, 0.8, 1, 0.8, 0.7],
+      };
+      const mobile = {
+        x: [mobileFar, mobileNear, 0, -mobileNear, -mobileFar],
+        scale: [0.62, 0.84, 1, 0.84, 0.62],
+      };
+      const tokens = vw >= 960 ? desktop : mobile;
+      const clamped = Math.max(-2, Math.min(2, relative));
+      const left = Math.max(-2, Math.min(1, Math.floor(clamped)));
+      const right = left + 1;
+      const t = clamped - left;
+      const from = left + 2;
+      const to = right + 2;
+      return {
+        translateX: lerp(tokens.x[from], tokens.x[to], t),
+        scale: lerp(tokens.scale[from], tokens.scale[to], t),
+      };
     },
-    { w: cfg.M.w, h: cfg.M.h, left: centerLeft - GAP - cfg.M.w, top: vCenter(cfg.M.h), z: 20, opacity: 1, shadow: "0 16px 50px -10px rgba(0,0,0,0.2)" },
-    { w: cfg.L.w, h: cfg.L.h, left: centerLeft,                  top: vCenter(cfg.L.h), z: 40, opacity: 1, shadow: "0 24px 70px -12px rgba(0,0,0,0.26)" },
-    { w: cfg.M.w, h: cfg.M.h, left: centerLeft + cfg.L.w + GAP,  top: vCenter(cfg.M.h), z: 20, opacity: 1, shadow: "0 16px 50px -10px rgba(0,0,0,0.2)" },
-    {
-      w: cfg.visibleOuter ? cfg.S.w : 0,
-      h: cfg.visibleOuter ? cfg.S.h : 0,
-      left: cfg.visibleOuter
-        ? centerLeft + cfg.L.w + GAP + cfg.M.w + GAP
-        : centerLeft + cfg.L.w + GAP + cfg.M.w + GAP + 200,
-      top: vCenter(cfg.visibleOuter ? cfg.S.h : cfg.M.h),
-      z: 10, opacity: cfg.visibleOuter ? 1 : 0,
-      shadow: "0 12px 40px -10px rgba(0,0,0,0.18)",
-    },
-  ];
-
-  // map "card index → slot index" for a given shift
-  const slotIdx = (i, s) => (i + 2 - (s % 5) + 5) % 5;
-
-  // <<< the important part
-  const prevShift = usePrevious(shift) ?? shift;
+    [vw, cfg.L.w]
+  );
 
   useEffect(() => {
-    const centerIdx = cards.findIndex((_, i) => slotIdx(i, shift) === 2);
+    const centerIdx = ((shift % cards.length) + cards.length) % cards.length;
     if (centerIdx !== -1) onCenterChange?.(cards[centerIdx].id);
   }, [shift, cards, onCenterChange]);
 
   useEffect(() => {
     return () => {
       onDragStateChange?.(false);
-      if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
-      if (releaseTimeoutRef.current) clearTimeout(releaseTimeoutRef.current);
+      if (dragReleaseTimeoutRef.current) clearTimeout(dragReleaseTimeoutRef.current);
     };
   }, [onDragStateChange]);
 
+  const wrapSigned = (value, size) => {
+    let wrapped = ((value % size) + size) % size;
+    if (wrapped > size / 2) wrapped -= size;
+    return wrapped;
+  };
+
   const onPointerDown = (e) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
-    if (snapTimeoutRef.current) {
-      clearTimeout(snapTimeoutRef.current);
-      snapTimeoutRef.current = null;
+    if (dragReleaseTimeoutRef.current) {
+      clearTimeout(dragReleaseTimeoutRef.current);
+      dragReleaseTimeoutRef.current = null;
     }
-    if (releaseTimeoutRef.current) {
-      clearTimeout(releaseTimeoutRef.current);
-      releaseTimeoutRef.current = null;
-    }
-    setPreserveKeys(true);
     onDragStateChange?.(true);
     activePointerId.current = e.pointerId;
     dragStartX.current = e.clientX;
     dragDeltaX.current = 0;
-    setIsSnapping(false);
-    setIsDragging(true);
+    setIsPointerDown(true);
+    setIsDragging(false);
     e.currentTarget.setPointerCapture?.(e.pointerId);
   };
 
@@ -419,31 +396,24 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
     if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
     const delta = e.clientX - dragStartX.current;
     dragDeltaX.current = delta;
+    if (Math.abs(delta) > 1 && !isDragging) setIsDragging(true);
     setDragX(delta);
   };
 
   const onPointerEnd = (e) => {
     if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
     const delta = dragDeltaX.current;
-    const steps = Math.abs(delta) >= DRAG_THRESHOLD ? Math.round(-delta / DRAG_STEP_WIDTH) : 0;
-    const snapTargetX = -steps * DRAG_STEP_WIDTH;
-    setIsSnapping(true);
-    setDragX(snapTargetX);
-
-    if (snapTimeoutRef.current) clearTimeout(snapTimeoutRef.current);
-    snapTimeoutRef.current = setTimeout(() => {
-      if (steps) onSwipeBy?.(steps);
-      setDragX(0);
-      setIsSnapping(false);
-      setIsDragging(false);
+    const rawSteps = Math.abs(delta) >= DRAG_THRESHOLD ? Math.round(-delta / slideSize) : 0;
+    const steps = Math.max(-2, Math.min(2, rawSteps));
+    if (steps) onSwipeBy?.(steps);
+    setDragX(0);
+    setIsDragging(false);
+    setIsPointerDown(false);
+    if (dragReleaseTimeoutRef.current) clearTimeout(dragReleaseTimeoutRef.current);
+    dragReleaseTimeoutRef.current = setTimeout(() => {
       onDragStateChange?.(false);
-      if (releaseTimeoutRef.current) clearTimeout(releaseTimeoutRef.current);
-      releaseTimeoutRef.current = setTimeout(() => {
-        setPreserveKeys(false);
-        releaseTimeoutRef.current = null;
-      }, 360);
-      snapTimeoutRef.current = null;
-    }, 190);
+      dragReleaseTimeoutRef.current = null;
+    }, 120);
 
     e.currentTarget.releasePointerCapture?.(e.pointerId);
     activePointerId.current = null;
@@ -455,9 +425,11 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
     e.preventDefault();
   };
 
+  const trackX = baseTrackX - virtualShift * slideSize;
+
   return (
     <div
-      className="relative mx-auto select-none"
+      className="landing-carousel-viewport hero-carousel-shell relative mx-auto select-none"
       style={{
         height: trackHeight,
         touchAction: "pan-y",
@@ -468,94 +440,85 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
       onPointerCancel={onPointerEnd}
       onDragStart={blockNativeImageDrag}
     >
-      {cards.map((card, i) => {
-        const prevIdx = slotIdx(i, prevShift);   // where it was last frame
-        const nextIdx = slotIdx(i, shift);       // where it should be now
-
-        const prevSlot = slots[prevIdx];
-        const nextSlot = slots[nextIdx];
-        const activeStepWidth = isDragging ? DRAG_STEP_WIDTH : STEP_WIDTH;
-        const activeCycleWidth = isDragging ? DRAG_CYCLE_WIDTH : CYCLE_WIDTH;
-        const activeCenterLeft = isDragging ? dragCenterLeft : centerLeft;
-        let wrappedLeft = activeCenterLeft + (nextIdx - 2) * activeStepWidth + dragX;
-        const activeW = isDragging ? DRAG_W : cfg.L.w;
-        // Wrap timing: same threshold for both directions.
-        const wrapBuffer = Math.round(activeW * 0.35);
-        const minBand = -wrapBuffer;
-        const maxBand = vw + wrapBuffer;
-        while (wrappedLeft < minBand) wrappedLeft += activeCycleWidth;
-        while (wrappedLeft > maxBand) wrappedLeft -= activeCycleWidth;
-
-        const dragSlot = {
-          left: wrappedLeft,
-          top: vCenter(DRAG_H),
-          w: DRAG_W,
-          h: DRAG_H,
-          z: nextSlot.z ?? (nextIdx === 2 ? 40 : 20),
-          opacity: 1,
-          shadow: "0 16px 48px -10px rgba(0,0,0,0.22)",
-        };
-        const activeNextSlot = isDragging ? dragSlot : nextSlot;
-
-        // Wrap rules depend ONLY on slot movement, not on which control triggered it.
-        const wrapFromLeftToRight = prevIdx === 0 && nextIdx === 4;
-        const wrapFromRightToLeft = prevIdx === 4 && nextIdx === 0;
-        const isWrapCard = wrapFromLeftToRight || wrapFromRightToLeft;
-        const nextW = activeNextSlot.w || cfg.M.w || cfg.L.w;
-        const offRight = activeNextSlot.left + nextW + GAP + 60;
-        const offLeft = activeNextSlot.left - nextW - GAP - 60;
-
-        const targetOpacity = activeNextSlot.opacity ?? 1;
-
-        return (
-          <motion.div
-            key={(preserveKeys || isDragging || isSnapping) && !isWrapCard ? card.id : `${card.id}-${shift}`}
-            className="absolute rounded-2xl overflow-hidden bg-white border border-black/5"
+      <div className="landing-carousel-track-clip">
+        <div
+          className="landing-carousel-track-frame"
+          style={{
+            "--slide-size": `${slideSize}px`,
+            "--slide-height": `${cfg.L.h}px`,
+            height: `${trackHeight}px`,
+          }}
+        >
+          <div
+            className="landing-carousel-track"
             style={{
-              zIndex: activeNextSlot.z,
-              boxShadow: activeNextSlot.shadow,
-              pointerEvents: targetOpacity ? "auto" : "none",
-              transform: "translateZ(0)",
+              transform: `translate3d(${trackX}px, 0px, 0px)`,
+              transition: isDragging ? "none" : "transform 200ms ease-out",
             }}
-            initial={{
-              left: wrapFromLeftToRight
-                ? offRight
-                : wrapFromRightToLeft
-                ? offLeft
-                : prevSlot.left,
-              top: wrapFromLeftToRight || wrapFromRightToLeft ? activeNextSlot.top : prevSlot.top,
-              width: wrapFromLeftToRight || wrapFromRightToLeft ? activeNextSlot.w : prevSlot.w,
-              height: wrapFromLeftToRight || wrapFromRightToLeft ? activeNextSlot.h : prevSlot.h,
-              opacity: prevSlot.opacity ?? 1,
-            }}
-            animate={{
-              left: activeNextSlot.left,
-              top: activeNextSlot.top,
-              width: activeNextSlot.w,
-              height: activeNextSlot.h,
-              opacity: targetOpacity,
-            }}
-            transition={
-              isDragging && !isSnapping
-                ? { duration: 0 }
-                : isSnapping
-                ? { type: "tween", duration: 0.18, ease: "easeOut" }
-                : { type: "spring", stiffness: 120, damping: 18, mass: 0.6 }
-            }
           >
-            <img
-              src={card.src}
-              alt={card.alt}
-              className="w-full h-full object-cover"
-              draggable={false}
-              onDragStart={blockNativeImageDrag}
-              loading="lazy"
-              decoding="async"
-              fetchPriority={nextIdx === 2 ? "high" : "low"}
-            />
-          </motion.div>
-        );
-      })}
+            {cards.map((slide, index) => {
+              const rawRelative = index - virtualShift;
+              const relative = wrapSigned(rawRelative, cards.length);
+              const wrapperTranslateX = (relative - rawRelative) * slideSize;
+              const isVisible = cfg.visibleOuter ? Math.abs(relative) <= 2.2 : Math.abs(relative) <= 1.45;
+              const visual = getSlideVisual(relative);
+              const effectiveTranslateX = isPointerDown ? 0 : visual.translateX;
+              const effectiveScale = isPointerDown ? 0.95 : visual.scale;
+              const opacity = isVisible ? 1 : 0;
+              const zIndex = 20 - Math.round(Math.abs(relative) * 4);
+              const isCenterish = Math.abs(relative) < 0.55;
+
+              return (
+                <div
+                  key={slide.id}
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-hidden={isCenterish ? "false" : "true"}
+                  className="landing-carousel-slide"
+                  style={{
+                    zIndex,
+                    transform: `translate3d(${wrapperTranslateX}px, 0px, 0px)`,
+                    transition: isDragging ? "none" : "transform 200ms ease-out",
+                  }}
+                >
+                  <div
+                    data-slide-content="true"
+                    className="landing-carousel-slide-content"
+                    style={{
+                      transform: `translateX(${effectiveTranslateX}px) scale(${effectiveScale})`,
+                      transformOrigin: "center center",
+                      opacity,
+                      transition: isDragging
+                        ? "none"
+                        : "transform 200ms ease-out, opacity 100ms ease-out",
+                      pointerEvents: isCenterish ? "auto" : "none",
+                    }}
+                  >
+                    <article aria-label={slide.alt} className="landing-carousel-card-shell">
+                      <div className="landing-carousel-card-shell-inner">
+                        <div>
+                          <div className="landing-carousel-card-surface" style={{ width: "100%", height: "100%" }}>
+                            <img
+                              src={slide.src}
+                              alt={slide.alt}
+                              className="hero-carousel-img"
+                              draggable={false}
+                              onDragStart={blockNativeImageDrag}
+                              loading="lazy"
+                              decoding="async"
+                              fetchPriority={isCenterish ? "high" : "low"}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -580,7 +543,7 @@ function HeroTypingCard({ text, hoverText, cta, to, type, vw, paused = false, on
     <div className={`hero-cta-shell ${hovering ? "is-hover" : ""}`}>
       <div className="hero-cta-glow" />
       <div
-        className="hero-typing-card rounded-2xl border border-neutral-200 bg-white shadow-[0_18px_60px_-10px_rgba(0,0,0,0.25)] pointer-events-auto"
+        className="hero-typing-card rounded-2xl border border-neutral-200 bg-white pointer-events-auto"
         style={{
           width: type.w,
           minHeight: type.h,

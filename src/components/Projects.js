@@ -58,46 +58,89 @@ export default function Projects() {
     return { visible, cardW, cardH, imgH, step: cardW + GAP };
   }, [vw, containerW]);
 
-  // Use a middle copy to allow seamless looping both directions
-  const items = useMemo(() => [...PROJECTS, ...PROJECTS, ...PROJECTS], []);
-  const initialIndex = total; // start on the middle copy
-  const [index, setIndex] = useState(initialIndex);
-  const [enableTransition, setEnableTransition] = useState(true);
+  const [trackIndex, setTrackIndex] = useState(0);
   const [page, setPage] = useState(1);
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartXRef = useRef(null);
+  const dragDeltaXRef = useRef(0);
+  const activePointerIdRef = useRef(null);
+  const didDragRef = useRef(false);
+  const DRAG_THRESHOLD = 48;
 
-  const next = useCallback(() => {
-    setIndex((s) => s + 1);
-    setPage((p) => (p >= total ? 1 : p + 1));
-  }, [total]);
-
-  const prev = useCallback(() => {
-    setIndex((s) => s - 1);
-    setPage((p) => (p <= 1 ? total : p - 1));
-  }, [total]);
-
-  const handleTransitionEnd = useCallback(
-    (e) => {
-      // Ignore bubbled transition events from children
-      if (e.target !== e.currentTarget) return;
-
-      setIndex((current) => {
-        if (current >= total * 2) {
-          setEnableTransition(false);
-          const next = current - total;
-          requestAnimationFrame(() => setEnableTransition(true));
-          return next;
-        }
-        if (current < total) {
-          setEnableTransition(false);
-          const next = current + total;
-          requestAnimationFrame(() => setEnableTransition(true));
-          return next;
-        }
-        return current;
+  const advanceBy = useCallback(
+    (delta) => {
+      if (!delta) return;
+      setTrackIndex((s) => s + delta);
+      setPage((p) => {
+        const nextPage = ((p - 1 + delta) % total + total) % total;
+        return nextPage + 1;
       });
     },
     [total]
   );
+
+  const next = useCallback(() => {
+    advanceBy(1);
+  }, [advanceBy]);
+
+  const prev = useCallback(() => {
+    advanceBy(-1);
+  }, [advanceBy]);
+
+  const wrapIntoViewportWindow = useCallback((value, size, visibleCount) => {
+    let wrapped = value;
+    // Keep one-buffer slot on each side so edge cards don't disappear during drag.
+    while (wrapped < -1) wrapped += size;
+    while (wrapped > visibleCount) wrapped -= size;
+    return wrapped;
+  }, []);
+
+  const onPointerDown = useCallback((e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    activePointerIdRef.current = e.pointerId;
+    dragStartXRef.current = e.clientX;
+    dragDeltaXRef.current = 0;
+    didDragRef.current = false;
+    setIsDragging(false);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }, []);
+
+  const onPointerMove = useCallback((e) => {
+    if (dragStartXRef.current == null || activePointerIdRef.current !== e.pointerId) return;
+    const delta = e.clientX - dragStartXRef.current;
+    dragDeltaXRef.current = delta;
+    if (Math.abs(delta) > 3) {
+      didDragRef.current = true;
+      if (!isDragging) setIsDragging(true);
+    }
+    setDragX(delta);
+  }, [isDragging]);
+
+  const onPointerEnd = useCallback(
+    (e) => {
+      if (dragStartXRef.current == null || activePointerIdRef.current !== e.pointerId) return;
+      const delta = dragDeltaXRef.current;
+      const rawSteps = Math.abs(delta) >= DRAG_THRESHOLD ? Math.round(-delta / layout.step) : 0;
+      const steps = Math.max(-2, Math.min(2, rawSteps));
+      setDragX(0);
+      setIsDragging(false);
+      if (steps) advanceBy(steps);
+
+      e.currentTarget.releasePointerCapture?.(e.pointerId);
+      activePointerIdRef.current = null;
+      dragStartXRef.current = null;
+      dragDeltaXRef.current = 0;
+    },
+    [advanceBy, layout.step]
+  );
+
+  const blockNativeDrag = useCallback((e) => {
+    e.preventDefault();
+  }, []);
+
+  const virtualIndex = trackIndex - dragX / layout.step;
+  const trackX = -virtualIndex * layout.step;
 
   return (
     <section id="projects" className="mt-20 w-full bg-black py-16 text-white md:py-24">
@@ -127,24 +170,44 @@ export default function Projects() {
             </div>
           </div>
 
-          <div ref={viewportRef} className="relative w-full overflow-hidden">
+          <div
+            ref={viewportRef}
+            className="relative w-full overflow-hidden select-none"
+            style={{ touchAction: "pan-y" }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerEnd}
+            onPointerCancel={onPointerEnd}
+            onDragStart={blockNativeDrag}
+          >
             <div
               className="flex"
               style={{
-                transform: `translateX(-${index * layout.step}px)`,
-                transition: enableTransition ? "transform 0.45s ease" : "none",
-                width: `${layout.step * items.length}px`,
+                transform: `translate3d(${trackX}px, 0px, 0px)`,
+                transition: isDragging ? "none" : "transform 0.2s ease-out",
+                width: `${layout.step * total}px`,
+                height: `${layout.cardH}px`,
               }}
-              onTransitionEnd={handleTransitionEnd}
             >
-            {items.map((project, idx) => (
+            {PROJECTS.map((project, idx) => {
+              const rawRelative = idx - virtualIndex;
+              const relative = wrapIntoViewportWindow(rawRelative, total, layout.visible);
+              const wrapperTranslateX = (relative - rawRelative) * layout.step;
+
+              return (
               <a
-                key={`${project.key}-${idx}`}
+                key={project.key}
                 href={project.href}
                 target="_blank"
                 rel="noreferrer"
                 aria-label={`${project.title} link`}
-                onClick={() => {
+                onClick={(e) => {
+                  if (didDragRef.current) {
+                    didDragRef.current = false;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
                   const name = `project_${project.key.toLowerCase()}_click`;
                   trackEvent(name, {
                     project: project.key,
@@ -154,11 +217,13 @@ export default function Projects() {
                 }}
                 className="flex flex-col justify-between rounded-2xl text-black shadow-lg"
                 style={{
+                  transform: `translate3d(${wrapperTranslateX}px, 0px, 0px)`,
+                  transition: "none",
                   backgroundColor: CARD_COLORS[project.key],
                   flex: `0 0 ${layout.cardW}px`,
                   width: `${layout.cardW}px`,
                   height: `${layout.cardH}px`,
-                  marginRight: `${idx === items.length - 1 ? 0 : GAP}px`,
+                  marginRight: `${idx === total - 1 ? 0 : GAP}px`,
                 }}
               >
                 <div className="px-4 pt-4 text-[26px] leading-[32px] font-semibold">{project.title}</div>
@@ -168,12 +233,15 @@ export default function Projects() {
                     alt={project.title}
                     className="w-auto object-contain"
                     style={{ height: `${layout.imgH}px` }}
+                    draggable={false}
+                    onDragStart={blockNativeDrag}
                     loading="lazy"
                     decoding="async"
                   />
                 </div>
               </a>
-            ))}
+              );
+            })}
           </div>
         </div>
         </div>
