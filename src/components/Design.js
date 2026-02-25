@@ -27,7 +27,7 @@ export default function Design() {
   return (
     <section id="design" className="relative z-[3] w-full bg-black py-16 md:py-24">
       <div className='f-container'>
-        <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-12 px-4 md:px-0">
+        <div className="mx-auto flex w-full max-w-[1320px] flex-col gap-12">
           <h2 className="about-headline font-semibold text-white">Design</h2>
 
         <div className="grid grid-cols-1 gap-8 min-[760px]:grid-cols-2">

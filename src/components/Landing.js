@@ -257,7 +257,7 @@ const copy = useMemo(
 
 
   return (
-    <section id="landing" className="pt-16 min-[960px]:pt-0 overflow-x-hidden overflow-y-visible">
+    <section id="landing" className="pt-6 min-[960px]:pt-0 overflow-x-hidden overflow-y-visible">
       <h1 className="sr-only">Thilak Voruganti</h1>
       <div className="cards-wrap relative mx-auto w-full isolate  pb-16 md:pb-20">
         <div>
@@ -320,13 +320,18 @@ const copy = useMemo(
 function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onDragStateChange }) {
   const cards = useMemo(() => CARD_DATA, []);
   const dragStartX = useRef(null);
+  const dragStartTimeRef = useRef(0);
   const dragDeltaX = useRef(0);
   const activePointerId = useRef(null);
+  const pointerTypeRef = useRef("mouse");
   const [dragX, setDragX] = useState(0);
   const [isPointerDown, setIsPointerDown] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const dragReleaseTimeoutRef = useRef(null);
-  const DRAG_THRESHOLD = 48;
+  const MOUSE_DRAG_THRESHOLD = 30;
+  const TOUCH_DRAG_THRESHOLD = 10;
+  const FLICK_VELOCITY_THRESHOLD = 0.16; // px/ms
+  const FLICK_DISTANCE_MIN = 3;
   const slideSize = cfg.L.w;
   const baseTrackX = Math.round((vw - slideSize) / 2);
   const virtualShift = shift - dragX / slideSize;
@@ -379,6 +384,7 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
 
   const onPointerDown = (e) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointerTypeRef.current = e.pointerType || "mouse";
     if (dragReleaseTimeoutRef.current) {
       clearTimeout(dragReleaseTimeoutRef.current);
       dragReleaseTimeoutRef.current = null;
@@ -386,6 +392,7 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
     onDragStateChange?.(true);
     activePointerId.current = e.pointerId;
     dragStartX.current = e.clientX;
+    dragStartTimeRef.current = typeof performance !== "undefined" ? performance.now() : Date.now();
     dragDeltaX.current = 0;
     setIsPointerDown(true);
     setIsDragging(false);
@@ -396,14 +403,24 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
     if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
     const delta = e.clientX - dragStartX.current;
     dragDeltaX.current = delta;
-    if (Math.abs(delta) > 1 && !isDragging) setIsDragging(true);
+    if (Math.abs(delta) > 0.5 && !isDragging) setIsDragging(true);
     setDragX(delta);
   };
 
   const onPointerEnd = (e) => {
     if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
     const delta = dragDeltaX.current;
-    const rawSteps = Math.abs(delta) >= DRAG_THRESHOLD ? Math.round(-delta / slideSize) : 0;
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    const elapsed = Math.max(1, now - (dragStartTimeRef.current || now));
+    const velocity = Math.abs(delta) / elapsed;
+    const dragThreshold = pointerTypeRef.current === "touch" ? TOUCH_DRAG_THRESHOLD : MOUSE_DRAG_THRESHOLD;
+    const isFlick = Math.abs(delta) >= FLICK_DISTANCE_MIN && velocity >= FLICK_VELOCITY_THRESHOLD;
+    const rawSteps =
+      Math.abs(delta) >= dragThreshold
+        ? Math.round(-delta / slideSize)
+        : isFlick
+        ? (delta < 0 ? 1 : -1)
+        : 0;
     const steps = Math.max(-2, Math.min(2, rawSteps));
     if (steps) onSwipeBy?.(steps);
     setDragX(0);
@@ -418,6 +435,7 @@ function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onD
     e.currentTarget.releasePointerCapture?.(e.pointerId);
     activePointerId.current = null;
     dragStartX.current = null;
+    dragStartTimeRef.current = 0;
     dragDeltaX.current = 0;
   };
 

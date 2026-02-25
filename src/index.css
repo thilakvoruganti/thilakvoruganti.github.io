@@ -169,6 +169,10 @@ p {
 /* Cards wrapper margins after the navbar */
 .cards-wrap { margin: 2.5rem 0 5rem; }
 
+@media (max-width: 959px) {
+  .cards-wrap { margin: 0.75rem 0 4rem; }
+}
+
 /* Typing box wrapper — centered, absolute inside the section */
 .type-wrap {
   position: absolute;

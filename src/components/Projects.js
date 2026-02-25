@@ -63,10 +63,15 @@ export default function Projects() {
   const [dragX, setDragX] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartXRef = useRef(null);
+  const dragStartTimeRef = useRef(0);
   const dragDeltaXRef = useRef(0);
   const activePointerIdRef = useRef(null);
   const didDragRef = useRef(false);
-  const DRAG_THRESHOLD = 48;
+  const MOUSE_DRAG_THRESHOLD = 28;
+  const TOUCH_DRAG_THRESHOLD = 8;
+  const FLICK_VELOCITY_THRESHOLD = 0.12; // px/ms
+  const FLICK_DISTANCE_MIN = 2;
+  const pointerTypeRef = useRef("mouse");
 
   const advanceBy = useCallback(
     (delta) => {
@@ -88,18 +93,21 @@ export default function Projects() {
     advanceBy(-1);
   }, [advanceBy]);
 
-  const wrapIntoViewportWindow = useCallback((value, size, visibleCount) => {
+  const wrapIntoViewportWindow = useCallback((value, size) => {
     let wrapped = value;
-    // Keep one-buffer slot on each side so edge cards don't disappear during drag.
+    // Keep all cards in unique recycled slots while preserving one left buffer slot.
+    // For 5 cards, this yields a stable window of [-1 .. 3] (5 distinct positions).
     while (wrapped < -1) wrapped += size;
-    while (wrapped > visibleCount) wrapped -= size;
+    while (wrapped > size - 2) wrapped -= size;
     return wrapped;
   }, []);
 
   const onPointerDown = useCallback((e) => {
     if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointerTypeRef.current = e.pointerType || "mouse";
     activePointerIdRef.current = e.pointerId;
     dragStartXRef.current = e.clientX;
+    dragStartTimeRef.current = typeof performance !== "undefined" ? performance.now() : Date.now();
     dragDeltaXRef.current = 0;
     didDragRef.current = false;
     setIsDragging(false);
@@ -110,7 +118,7 @@ export default function Projects() {
     if (dragStartXRef.current == null || activePointerIdRef.current !== e.pointerId) return;
     const delta = e.clientX - dragStartXRef.current;
     dragDeltaXRef.current = delta;
-    if (Math.abs(delta) > 3) {
+    if (Math.abs(delta) > 0.5) {
       didDragRef.current = true;
       if (!isDragging) setIsDragging(true);
     }
@@ -121,16 +129,33 @@ export default function Projects() {
     (e) => {
       if (dragStartXRef.current == null || activePointerIdRef.current !== e.pointerId) return;
       const delta = dragDeltaXRef.current;
-      const rawSteps = Math.abs(delta) >= DRAG_THRESHOLD ? Math.round(-delta / layout.step) : 0;
+      const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+      const elapsed = Math.max(1, now - (dragStartTimeRef.current || now));
+      const velocity = Math.abs(delta) / elapsed;
+      const dragThreshold = pointerTypeRef.current === "touch" ? TOUCH_DRAG_THRESHOLD : MOUSE_DRAG_THRESHOLD;
+      const isFlick = Math.abs(delta) >= FLICK_DISTANCE_MIN && velocity >= FLICK_VELOCITY_THRESHOLD;
+      const rawSteps =
+        Math.abs(delta) >= dragThreshold
+          ? Math.round(-delta / layout.step)
+          : isFlick
+          ? (delta < 0 ? 1 : -1)
+          : 0;
       const steps = Math.max(-2, Math.min(2, rawSteps));
       setDragX(0);
       setIsDragging(false);
       if (steps) advanceBy(steps);
-
-      e.currentTarget.releasePointerCapture?.(e.pointerId);
-      activePointerIdRef.current = null;
-      dragStartXRef.current = null;
-      dragDeltaXRef.current = 0;
+      try {
+        if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch (_error) {
+        // Mobile browsers can cancel pointers and invalidate capture before release.
+      } finally {
+        activePointerIdRef.current = null;
+        dragStartXRef.current = null;
+        dragStartTimeRef.current = 0;
+        dragDeltaXRef.current = 0;
+      }
     },
     [advanceBy, layout.step]
   );
@@ -191,7 +216,7 @@ export default function Projects() {
             >
             {PROJECTS.map((project, idx) => {
               const rawRelative = idx - virtualIndex;
-              const relative = wrapIntoViewportWindow(rawRelative, total, layout.visible);
+              const relative = wrapIntoViewportWindow(rawRelative, total);
               const wrapperTranslateX = (relative - rawRelative) * layout.step;
 
               return (
