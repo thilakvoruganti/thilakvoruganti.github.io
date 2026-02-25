@@ -58,46 +58,129 @@ export default function Projects() {
     return { visible, cardW, cardH, imgH, step: cardW + GAP };
   }, [vw, containerW]);
 
-  // Use a middle copy to allow seamless looping both directions
-  const items = useMemo(() => [...PROJECTS, ...PROJECTS, ...PROJECTS], []);
-  const initialIndex = total; // start on the middle copy
-  const [index, setIndex] = useState(initialIndex);
-  const [enableTransition, setEnableTransition] = useState(true);
+  const [trackIndex, setTrackIndex] = useState(0);
   const [page, setPage] = useState(1);
+  const [dragX, setDragX] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartXRef = useRef(null);
+  const dragStartTimeRef = useRef(0);
+  const dragDeltaXRef = useRef(0);
+  const activePointerIdRef = useRef(null);
+  const didDragRef = useRef(false);
+  const MOUSE_DRAG_THRESHOLD = 40;
+  const TOUCH_DRAG_THRESHOLD = 24;
+  const FLICK_VELOCITY_THRESHOLD = 0.35; // px/ms
+  const FLICK_DISTANCE_MIN = 10;
+  const STEP_SWITCH_RATIO = vw >= 960 ? 0.25 : 0.2; // desktop 25%, mobile/tablet 20%
+  const pointerTypeRef = useRef("mouse");
 
-  const next = useCallback(() => {
-    setIndex((s) => s + 1);
-    setPage((p) => (p >= total ? 1 : p + 1));
-  }, [total]);
-
-  const prev = useCallback(() => {
-    setIndex((s) => s - 1);
-    setPage((p) => (p <= 1 ? total : p - 1));
-  }, [total]);
-
-  const handleTransitionEnd = useCallback(
-    (e) => {
-      // Ignore bubbled transition events from children
-      if (e.target !== e.currentTarget) return;
-
-      setIndex((current) => {
-        if (current >= total * 2) {
-          setEnableTransition(false);
-          const next = current - total;
-          requestAnimationFrame(() => setEnableTransition(true));
-          return next;
-        }
-        if (current < total) {
-          setEnableTransition(false);
-          const next = current + total;
-          requestAnimationFrame(() => setEnableTransition(true));
-          return next;
-        }
-        return current;
+  const advanceBy = useCallback(
+    (delta) => {
+      if (!delta) return;
+      setTrackIndex((s) => s + delta);
+      setPage((p) => {
+        const nextPage = ((p - 1 + delta) % total + total) % total;
+        return nextPage + 1;
       });
     },
     [total]
   );
+
+  const next = useCallback(() => {
+    advanceBy(1);
+  }, [advanceBy]);
+
+  const prev = useCallback(() => {
+    advanceBy(-1);
+  }, [advanceBy]);
+
+  const wrapIntoViewportWindow = useCallback((value, size) => {
+    let wrapped = value;
+    // Keep all cards in unique recycled slots while preserving one left buffer slot.
+    // For 5 cards, this yields a stable window of [-1 .. 3] (5 distinct positions).
+    while (wrapped < -1) wrapped += size;
+    while (wrapped > size - 2) wrapped -= size;
+    return wrapped;
+  }, []);
+
+  const onPointerDown = useCallback((e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointerTypeRef.current = e.pointerType || "mouse";
+    activePointerIdRef.current = e.pointerId;
+    dragStartXRef.current = e.clientX;
+    dragStartTimeRef.current = typeof performance !== "undefined" ? performance.now() : Date.now();
+    dragDeltaXRef.current = 0;
+    didDragRef.current = false;
+    setIsDragging(false);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  }, []);
+
+  const onPointerMove = useCallback((e) => {
+    if (dragStartXRef.current == null || activePointerIdRef.current !== e.pointerId) return;
+    const delta = e.clientX - dragStartXRef.current;
+    dragDeltaXRef.current = delta;
+    if (Math.abs(delta) > 2) {
+      didDragRef.current = true;
+      if (!isDragging) setIsDragging(true);
+    }
+    setDragX(delta);
+  }, [isDragging]);
+
+  const resetGesture = useCallback(() => {
+    setDragX(0);
+    setIsDragging(false);
+    activePointerIdRef.current = null;
+    dragStartXRef.current = null;
+    dragStartTimeRef.current = 0;
+    dragDeltaXRef.current = 0;
+  }, []);
+
+  const onPointerEnd = useCallback(
+    (e) => {
+      if (dragStartXRef.current == null || activePointerIdRef.current !== e.pointerId) return;
+      const delta = dragDeltaXRef.current;
+      const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+      const elapsed = Math.max(1, now - (dragStartTimeRef.current || now));
+      const velocity = Math.abs(delta) / elapsed;
+      const dragThreshold = pointerTypeRef.current === "touch" ? TOUCH_DRAG_THRESHOLD : MOUSE_DRAG_THRESHOLD;
+      const isFlick = Math.abs(delta) >= FLICK_DISTANCE_MIN && velocity >= FLICK_VELOCITY_THRESHOLD;
+      const distanceStepThreshold = layout.step * STEP_SWITCH_RATIO;
+      const rawSteps =
+        Math.abs(delta) >= dragThreshold
+          ? Math.round(-delta / distanceStepThreshold)
+          : isFlick
+          ? (delta < 0 ? 1 : -1)
+          : 0;
+      const steps = Math.max(-2, Math.min(2, rawSteps));
+      if (steps) advanceBy(steps);
+      try {
+        if (e.currentTarget?.hasPointerCapture?.(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch (_error) {
+        // Mobile browsers can cancel pointers and invalidate capture before release.
+      } finally {
+        resetGesture();
+      }
+    },
+    [advanceBy, layout.step, resetGesture, STEP_SWITCH_RATIO]
+  );
+
+  const onPointerCancel = useCallback(() => {
+    resetGesture();
+  }, [resetGesture]);
+
+  const onLostPointerCapture = useCallback(() => {
+    // Some mobile browsers end touch sequences via lostpointercapture without pointerup.
+    resetGesture();
+  }, [resetGesture]);
+
+  const blockNativeDrag = useCallback((e) => {
+    e.preventDefault();
+  }, []);
+
+  const virtualIndex = trackIndex - dragX / layout.step;
+  const trackX = -virtualIndex * layout.step;
 
   return (
     <section id="projects" className="mt-20 w-full bg-black py-16 text-white md:py-24">
@@ -127,24 +210,45 @@ export default function Projects() {
             </div>
           </div>
 
-          <div ref={viewportRef} className="relative w-full overflow-hidden">
+          <div
+            ref={viewportRef}
+            className="relative w-full overflow-hidden select-none"
+            style={{ touchAction: "pan-y" }}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerEnd}
+            onPointerCancel={onPointerCancel}
+            onLostPointerCapture={onLostPointerCapture}
+            onDragStart={blockNativeDrag}
+          >
             <div
               className="flex"
               style={{
-                transform: `translateX(-${index * layout.step}px)`,
-                transition: enableTransition ? "transform 0.45s ease" : "none",
-                width: `${layout.step * items.length}px`,
+                transform: `translate3d(${trackX}px, 0px, 0px)`,
+                transition: isDragging ? "none" : "transform 0.2s ease-out",
+                width: `${layout.step * total}px`,
+                height: `${layout.cardH}px`,
               }}
-              onTransitionEnd={handleTransitionEnd}
             >
-            {items.map((project, idx) => (
+            {PROJECTS.map((project, idx) => {
+              const rawRelative = idx - virtualIndex;
+              const relative = wrapIntoViewportWindow(rawRelative, total);
+              const wrapperTranslateX = (relative - rawRelative) * layout.step;
+
+              return (
               <a
-                key={`${project.key}-${idx}`}
+                key={project.key}
                 href={project.href}
                 target="_blank"
                 rel="noreferrer"
                 aria-label={`${project.title} link`}
-                onClick={() => {
+                onClick={(e) => {
+                  if (didDragRef.current) {
+                    didDragRef.current = false;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    return;
+                  }
                   const name = `project_${project.key.toLowerCase()}_click`;
                   trackEvent(name, {
                     project: project.key,
@@ -154,11 +258,13 @@ export default function Projects() {
                 }}
                 className="flex flex-col justify-between rounded-2xl text-black shadow-lg"
                 style={{
+                  transform: `translate3d(${wrapperTranslateX}px, 0px, 0px)`,
+                  transition: "none",
                   backgroundColor: CARD_COLORS[project.key],
                   flex: `0 0 ${layout.cardW}px`,
                   width: `${layout.cardW}px`,
                   height: `${layout.cardH}px`,
-                  marginRight: `${idx === items.length - 1 ? 0 : GAP}px`,
+                  marginRight: `${idx === total - 1 ? 0 : GAP}px`,
                 }}
               >
                 <div className="px-4 pt-4 text-[26px] leading-[32px] font-semibold">{project.title}</div>
@@ -168,12 +274,15 @@ export default function Projects() {
                     alt={project.title}
                     className="w-auto object-contain"
                     style={{ height: `${layout.imgH}px` }}
+                    draggable={false}
+                    onDragStart={blockNativeDrag}
                     loading="lazy"
                     decoding="async"
                   />
                 </div>
               </a>
-            ))}
+              );
+            })}
           </div>
         </div>
         </div>

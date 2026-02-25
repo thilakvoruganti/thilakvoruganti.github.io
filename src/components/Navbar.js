@@ -57,6 +57,7 @@ export default function Navbar() {
     (id) => {
       const needsOffset = id === "about" || id === "experience";
       const runScroll = () => (needsOffset ? scrollWithOffset(id) : scrollNative(id));
+
       close();
       if (location.pathname !== "/") {
         navigate("/");
@@ -283,12 +284,15 @@ export default function Navbar() {
       </header>
       </div>
 
+      {open ? (
       <div
-        className={`fixed inset-x-0 top-[81px] bottom-0 z-40 bg-white transition-transform duration-300 ease-out min-[960px]:hidden ${
-          open ? "translate-y-0" : "-translate-y-full pointer-events-none"
-        }`}
+        className="fixed inset-x-0 top-[81px] bottom-0 z-40 bg-white transition-transform duration-300 ease-out min-[960px]:hidden"
+        style={{
+          transform: "translateY(0)",
+          pointerEvents: "auto",
+        }}
       >
-        <div className="mx-auto flex h-full w-full max-w-[120rem] flex-col px-6 pt-10 pb-10">
+        <div className="mx-auto flex h-full w-full max-w-[120rem] flex-col overflow-y-auto overscroll-contain px-6 pt-10 pb-10">
           <div className="flex flex-1 flex-col items-start justify-start gap-5">
             {sectionItems.map((item, idx) => (
               <button
@@ -319,6 +323,7 @@ export default function Navbar() {
           </div>
         </div>
       </div>
+      ) : null}
     </>
   );
 }

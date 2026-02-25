@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { EXTERNAL_LINKS } from "../constants";
 import { trackEvent } from "../lib/firebaseAnalytics";
@@ -214,10 +213,11 @@ const copy = useMemo(
   /* autoplay + ring */
   const [running, setRunning] = useState(true);
   const [isCtaHovered, setIsCtaHovered] = useState(false);
+  const [isCarouselDragging, setIsCarouselDragging] = useState(false);
   const durationMs = 8000; // <- 8s highlight duration
   const onTick = useCallback(() => setShift((s) => (s + 1) % 5), []);
   const { elapsed, reset } = useAutoRotate({
-    running: running && !isCtaHovered,
+    running: running && !isCtaHovered && !isCarouselDragging,
     durationMs,
     onTick,
   });
@@ -257,7 +257,7 @@ const copy = useMemo(
 
 
   return (
-    <section id="landing" className="pt-16 min-[960px]:pt-0 overflow-x-hidden overflow-y-visible">
+    <section id="landing" className="pt-6 min-[960px]:pt-0 overflow-x-hidden overflow-y-visible">
       <h1 className="sr-only">Thilak Voruganti</h1>
       <div className="cards-wrap relative mx-auto w-full isolate  pb-16 md:pb-20">
         <div>
@@ -267,6 +267,12 @@ const copy = useMemo(
             shift={shift}
             onCenterChange={setCenterId}
             trackHeight={trackHeight}
+            onDragStateChange={setIsCarouselDragging}
+            onSwipeBy={(steps) => {
+              if (!steps) return;
+              setShift((s) => ((s + steps) % 5 + 5) % 5);
+              reset();
+            }}
           />
 
           {/* Typing + Controls */}
@@ -279,7 +285,7 @@ const copy = useMemo(
                 to={current.to}
                 type={cfg.type}
                 vw={vw}
-                paused={isCtaHovered}
+                paused={isCtaHovered || isCarouselDragging}
                 onCtaHoverChange={setIsCtaHovered}
               />
             </div>
@@ -289,7 +295,7 @@ const copy = useMemo(
             onPrev={prev}
             onNext={next}
             running={running}
-            interactionPaused={isCtaHovered}
+            interactionPaused={isCtaHovered || isCarouselDragging}
             onToggle={() => setRunning((v) => !v)}
             progress={progress}
           />
@@ -310,137 +316,229 @@ const copy = useMemo(
     </section>
   );
 }
-function usePrevious(value) {
-  const ref = useRef(value);
-  useEffect(() => { ref.current = value; }, [value]);
-  return ref.current;
-}
 /* ===================== Carousel ===================== */
-function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight }) {
+function Carousel5({ vw, cfg, shift, onCenterChange, trackHeight, onSwipeBy, onDragStateChange }) {
   const cards = useMemo(() => CARD_DATA, []);
-
-  const GAP = 23;
-  const centerX = vw / 2;
-  const centerLeft = centerX - cfg.L.w / 2;
-  const vCenter = (h) => Math.round((trackHeight - h) / 2);
-
-  const slots = [
-    {
-      w: cfg.visibleOuter ? cfg.S.w : 0,
-      h: cfg.visibleOuter ? cfg.S.h : 0,
-      left: cfg.visibleOuter
-        ? centerLeft - GAP - cfg.M.w - GAP - cfg.S.w
-        : centerLeft - GAP - cfg.M.w - GAP - (cfg.S.w || 0) - 200,
-      top: vCenter(cfg.visibleOuter ? cfg.S.h : cfg.M.h),
-      z: 10,
-      opacity: cfg.visibleOuter ? 1 : 0,
-      shadow: "0 12px 40px -10px rgba(0,0,0,0.18)",
+  const dragStartX = useRef(null);
+  const dragStartTimeRef = useRef(0);
+  const dragDeltaX = useRef(0);
+  const activePointerId = useRef(null);
+  const pointerTypeRef = useRef("mouse");
+  const [dragX, setDragX] = useState(0);
+  const [isPointerDown, setIsPointerDown] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragReleaseTimeoutRef = useRef(null);
+  const MOUSE_DRAG_THRESHOLD = 40;
+  const TOUCH_DRAG_THRESHOLD = 24;
+  const FLICK_VELOCITY_THRESHOLD = 0.35; // px/ms
+  const FLICK_DISTANCE_MIN = 10;
+  const STEP_SWITCH_RATIO = vw >= 960 ? 0.5 : 0.2; // desktop 50%, mobile/tablet 20%
+  const slideSize = cfg.L.w;
+  const baseTrackX = Math.round((vw - slideSize) / 2);
+  const virtualShift = shift - dragX / slideSize;
+  const getSlideVisual = useCallback(
+    (relative) => {
+      const desktopNear = cfg.L.w * (33 / 490);
+      const desktopFar = cfg.L.w * (131 / 490);
+      const mobileNear = cfg.L.w * (22.4 / 384);
+      const mobileFar = cfg.L.w * (88 / 384);
+      const desktop = {
+        x: [desktopFar, desktopNear, 0, -desktopNear, -desktopFar],
+        scale: [0.7, 0.8, 1, 0.8, 0.7],
+      };
+      const mobile = {
+        x: [mobileFar, mobileNear, 0, -mobileNear, -mobileFar],
+        scale: [0.62, 0.84, 1, 0.84, 0.62],
+      };
+      const tokens = vw >= 960 ? desktop : mobile;
+      const clamped = Math.max(-2, Math.min(2, relative));
+      const left = Math.max(-2, Math.min(1, Math.floor(clamped)));
+      const right = left + 1;
+      const t = clamped - left;
+      const from = left + 2;
+      const to = right + 2;
+      return {
+        translateX: lerp(tokens.x[from], tokens.x[to], t),
+        scale: lerp(tokens.scale[from], tokens.scale[to], t),
+      };
     },
-    {
-      w: cfg.M.w,
-      h: cfg.M.h,
-      left: centerLeft - GAP - cfg.M.w,
-      top: vCenter(cfg.M.h),
-      z: 20,
-      opacity: 1,
-      shadow: "0 16px 50px -10px rgba(0,0,0,0.2)",
-    },
-    {
-      w: cfg.L.w,
-      h: cfg.L.h,
-      left: centerLeft,
-      top: vCenter(cfg.L.h),
-      z: 40,
-      opacity: 1,
-      shadow: "0 24px 70px -12px rgba(0,0,0,0.26)",
-    },
-    {
-      w: cfg.M.w,
-      h: cfg.M.h,
-      left: centerLeft + cfg.L.w + GAP,
-      top: vCenter(cfg.M.h),
-      z: 20,
-      opacity: 1,
-      shadow: "0 16px 50px -10px rgba(0,0,0,0.2)",
-    },
-    {
-      w: cfg.visibleOuter ? cfg.S.w : 0,
-      h: cfg.visibleOuter ? cfg.S.h : 0,
-      left: cfg.visibleOuter
-        ? centerLeft + cfg.L.w + GAP + cfg.M.w + GAP
-        : centerLeft + cfg.L.w + GAP + cfg.M.w + GAP + 200,
-      top: vCenter(cfg.visibleOuter ? cfg.S.h : cfg.M.h),
-      z: 10,
-      opacity: cfg.visibleOuter ? 1 : 0,
-      shadow: "0 12px 40px -10px rgba(0,0,0,0.18)",
-    },
-  ];
-
-  const slotIdx = (i, s) => (i + 2 - (s % 5) + 5) % 5;
-  const prevShift = usePrevious(shift) ?? shift;
+    [vw, cfg.L.w]
+  );
 
   useEffect(() => {
-    const centerIdx = cards.findIndex((_, i) => slotIdx(i, shift) === 2);
+    const centerIdx = ((shift % cards.length) + cards.length) % cards.length;
     if (centerIdx !== -1) onCenterChange?.(cards[centerIdx].id);
   }, [shift, cards, onCenterChange]);
 
+  useEffect(() => {
+    return () => {
+      onDragStateChange?.(false);
+      if (dragReleaseTimeoutRef.current) clearTimeout(dragReleaseTimeoutRef.current);
+    };
+  }, [onDragStateChange]);
+
+  const wrapSigned = (value, size) => {
+    let wrapped = ((value % size) + size) % size;
+    if (wrapped > size / 2) wrapped -= size;
+    return wrapped;
+  };
+
+  const onPointerDown = (e) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    pointerTypeRef.current = e.pointerType || "mouse";
+    if (dragReleaseTimeoutRef.current) {
+      clearTimeout(dragReleaseTimeoutRef.current);
+      dragReleaseTimeoutRef.current = null;
+    }
+    onDragStateChange?.(true);
+    activePointerId.current = e.pointerId;
+    dragStartX.current = e.clientX;
+    dragStartTimeRef.current = typeof performance !== "undefined" ? performance.now() : Date.now();
+    dragDeltaX.current = 0;
+    setIsPointerDown(true);
+    setIsDragging(false);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+
+  const onPointerMove = (e) => {
+    if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
+    const delta = e.clientX - dragStartX.current;
+    dragDeltaX.current = delta;
+    if (Math.abs(delta) > 2 && !isDragging) setIsDragging(true);
+    setDragX(delta);
+  };
+
+  const onPointerEnd = (e) => {
+    if (dragStartX.current == null || activePointerId.current !== e.pointerId) return;
+    const delta = dragDeltaX.current;
+    const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+    const elapsed = Math.max(1, now - (dragStartTimeRef.current || now));
+    const velocity = Math.abs(delta) / elapsed;
+    const dragThreshold = pointerTypeRef.current === "touch" ? TOUCH_DRAG_THRESHOLD : MOUSE_DRAG_THRESHOLD;
+    const isFlick = Math.abs(delta) >= FLICK_DISTANCE_MIN && velocity >= FLICK_VELOCITY_THRESHOLD;
+    const distanceStepThreshold = slideSize * STEP_SWITCH_RATIO;
+    const rawSteps =
+      Math.abs(delta) >= dragThreshold
+        ? Math.round(-delta / distanceStepThreshold)
+        : isFlick
+        ? (delta < 0 ? 1 : -1)
+        : 0;
+    const steps = Math.max(-2, Math.min(2, rawSteps));
+    if (steps) onSwipeBy?.(steps);
+    setDragX(0);
+    setIsDragging(false);
+    setIsPointerDown(false);
+    if (dragReleaseTimeoutRef.current) clearTimeout(dragReleaseTimeoutRef.current);
+    dragReleaseTimeoutRef.current = setTimeout(() => {
+      onDragStateChange?.(false);
+      dragReleaseTimeoutRef.current = null;
+    }, 120);
+
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    activePointerId.current = null;
+    dragStartX.current = null;
+    dragStartTimeRef.current = 0;
+    dragDeltaX.current = 0;
+  };
+
+  const blockNativeImageDrag = (e) => {
+    e.preventDefault();
+  };
+
+  const trackX = baseTrackX - virtualShift * slideSize;
+
   return (
-    <div className="relative mx-auto" style={{ height: trackHeight }}>
-      {cards.map((card, i) => {
-        const prevIdx = slotIdx(i, prevShift);
-        const nextIdx = slotIdx(i, shift);
-
-        const prevSlot = slots[prevIdx];
-        const nextSlot = slots[nextIdx];
-
-        const wrapFromLeftToRight = prevIdx === 0 && nextIdx === 4;
-        const wrapFromRightToLeft = prevIdx === 4 && nextIdx === 0;
-        const nextW = nextSlot.w || cfg.M.w || cfg.L.w;
-        const offRight = nextSlot.left + nextW + GAP + 60;
-        const offLeft = nextSlot.left - nextW - GAP - 60;
-        const targetOpacity = nextSlot.opacity ?? 1;
-
-        return (
-          <motion.div
-            key={`${card.id}-${shift}`}
-            className="absolute rounded-2xl overflow-hidden bg-white border border-black/5"
+    <div
+      className="landing-carousel-viewport hero-carousel-shell relative mx-auto select-none"
+      style={{
+        height: trackHeight,
+        touchAction: "pan-y",
+      }}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerEnd}
+      onPointerCancel={onPointerEnd}
+      onDragStart={blockNativeImageDrag}
+    >
+      <div className="landing-carousel-track-clip">
+        <div
+          className="landing-carousel-track-frame"
+          style={{
+            "--slide-size": `${slideSize}px`,
+            "--slide-height": `${cfg.L.h}px`,
+            height: `${trackHeight}px`,
+          }}
+        >
+          <div
+            className="landing-carousel-track"
             style={{
-              zIndex: nextSlot.z,
-              boxShadow: nextSlot.shadow,
-              pointerEvents: targetOpacity ? "auto" : "none",
-              transform: "translateZ(0)",
+              transform: `translate3d(${trackX}px, 0px, 0px)`,
+              transition: isDragging ? "none" : "transform 200ms ease-out",
             }}
-            initial={{
-              left: wrapFromLeftToRight
-                ? offRight
-                : wrapFromRightToLeft
-                ? offLeft
-                : prevSlot.left,
-              top: wrapFromLeftToRight || wrapFromRightToLeft ? nextSlot.top : prevSlot.top,
-              width: wrapFromLeftToRight || wrapFromRightToLeft ? nextSlot.w : prevSlot.w,
-              height: wrapFromLeftToRight || wrapFromRightToLeft ? nextSlot.h : prevSlot.h,
-              opacity: prevSlot.opacity ?? 1,
-            }}
-            animate={{
-              left: nextSlot.left,
-              top: nextSlot.top,
-              width: nextSlot.w,
-              height: nextSlot.h,
-              opacity: targetOpacity,
-            }}
-            transition={{ type: "spring", stiffness: 120, damping: 18, mass: 0.6 }}
           >
-            <img
-              src={card.src}
-              alt={card.alt}
-              className="w-full h-full object-cover"
-              loading="lazy"
-              decoding="async"
-              fetchPriority={nextIdx === 2 ? "high" : "low"}
-            />
-          </motion.div>
-        );
-      })}
+            {cards.map((slide, index) => {
+              const rawRelative = index - virtualShift;
+              const relative = wrapSigned(rawRelative, cards.length);
+              const wrapperTranslateX = (relative - rawRelative) * slideSize;
+              const isVisible = cfg.visibleOuter ? Math.abs(relative) <= 2.2 : Math.abs(relative) <= 1.45;
+              const visual = getSlideVisual(relative);
+              const effectiveTranslateX = isPointerDown ? 0 : visual.translateX;
+              const effectiveScale = isPointerDown ? 0.95 : visual.scale;
+              const opacity = isVisible ? 1 : 0;
+              const zIndex = 20 - Math.round(Math.abs(relative) * 4);
+              const isCenterish = Math.abs(relative) < 0.55;
+
+              return (
+                <div
+                  key={slide.id}
+                  role="group"
+                  aria-roledescription="slide"
+                  aria-hidden={isCenterish ? "false" : "true"}
+                  className="landing-carousel-slide"
+                  style={{
+                    zIndex,
+                    transform: `translate3d(${wrapperTranslateX}px, 0px, 0px)`,
+                    transition: isDragging ? "none" : "transform 200ms ease-out",
+                  }}
+                >
+                  <div
+                    data-slide-content="true"
+                    className="landing-carousel-slide-content"
+                    style={{
+                      transform: `translateX(${effectiveTranslateX}px) scale(${effectiveScale})`,
+                      transformOrigin: "center center",
+                      opacity,
+                      transition: isDragging
+                        ? "none"
+                        : "transform 200ms ease-out, opacity 100ms ease-out",
+                      pointerEvents: isCenterish ? "auto" : "none",
+                    }}
+                  >
+                    <article aria-label={slide.alt} className="landing-carousel-card-shell">
+                      <div className="landing-carousel-card-shell-inner">
+                        <div>
+                          <div className="landing-carousel-card-surface" style={{ width: "100%", height: "100%" }}>
+                            <img
+                              src={slide.src}
+                              alt={slide.alt}
+                              className="hero-carousel-img"
+                              draggable={false}
+                              onDragStart={blockNativeImageDrag}
+                              loading="lazy"
+                              decoding="async"
+                              fetchPriority={isCenterish ? "high" : "low"}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </article>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -465,7 +563,7 @@ function HeroTypingCard({ text, hoverText, cta, to, type, vw, paused = false, on
     <div className={`hero-cta-shell ${hovering ? "is-hover" : ""}`}>
       <div className="hero-cta-glow" />
       <div
-        className="hero-typing-card rounded-2xl border border-neutral-200 bg-white shadow-[0_18px_60px_-10px_rgba(0,0,0,0.25)] pointer-events-auto"
+        className="hero-typing-card rounded-2xl border border-neutral-200 bg-white pointer-events-auto"
         style={{
           width: type.w,
           minHeight: type.h,
