@@ -71,7 +71,7 @@ export default function Projects() {
   const TOUCH_DRAG_THRESHOLD = 24;
   const FLICK_VELOCITY_THRESHOLD = 0.35; // px/ms
   const FLICK_DISTANCE_MIN = 10;
-  const STEP_SWITCH_RATIO = vw >= 960 ? 0.5 : 0.2; // desktop 50%, mobile/tablet 20%
+  const STEP_SWITCH_RATIO = vw >= 960 ? 0.25 : 0.2; // desktop 25%, mobile/tablet 20%
   const pointerTypeRef = useRef("mouse");
 
   const advanceBy = useCallback(
